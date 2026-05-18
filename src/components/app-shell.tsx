@@ -45,11 +45,13 @@ export function AppHeader({ data }: { data: ProfileData }) {
     router.navigate({ to: "/" });
   }
   return (
-    <header className="px-5 md:px-8 py-4 border-b bg-card/50 backdrop-blur sticky top-0 z-10">
+    <header className="px-5 md:px-8 py-4 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-        <Link to="/app" className="flex items-center gap-2">
-          <ChefHat className="size-5 text-primary" />
-          <span className="font-display font-semibold">Panarchy</span>
+        <Link to="/app" className="flex items-center gap-2 group">
+          <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <ChefHat className="size-5 text-primary" />
+          </div>
+          <span className="font-display font-semibold tracking-tight text-lg">Cheffy</span>
         </Link>
         <div className="flex items-center gap-2">
           {data.household && (

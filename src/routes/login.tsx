@@ -67,9 +67,11 @@ export function AuthShell({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="px-6 md:px-10 py-6">
-        <Link to="/" className="flex items-center gap-2">
-          <ChefHat className="size-6 text-primary" />
-          <span className="font-display text-xl font-semibold">Panarchy</span>
+        <Link to="/" className="flex items-center gap-2 group w-fit">
+          <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <ChefHat className="size-6 text-primary" />
+          </div>
+          <span className="font-display text-2xl font-semibold tracking-tight">Cheffy</span>
         </Link>
       </header>
       <main className="flex-1 flex items-center justify-center px-6 pb-12">

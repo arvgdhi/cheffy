@@ -116,7 +116,7 @@ function ScheduledCard({
 
   return (
     <div
-      className={`rounded-2xl border bg-card p-3 flex items-center gap-3 ${dish.completed ? "opacity-60" : ""}`}
+      className={`group rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-all duration-300 hover:shadow-md hover:border-primary/20 ${dish.completed ? "opacity-60 grayscale-[0.5]" : ""}`}
     >
       <div className="size-14 rounded-lg bg-muted overflow-hidden flex-shrink-0">
         {dish.dish_image && (
@@ -135,18 +135,18 @@ function ScheduledCard({
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-1.5">
-        <Button size="sm" variant="outline" onClick={() => setRecipeOpen(true)}>
+        <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setRecipeOpen(true)}>
           Recipe
         </Button>
         {canManage && (
-          <>
-            <Button size="icon" variant="ghost" onClick={toggle} title="Toggle done">
+          <div className="flex gap-1.5 ml-auto sm:ml-0">
+            <Button size="icon" variant="outline" className="rounded-xl hover:bg-primary/10 hover:text-primary transition-colors" onClick={toggle} title="Toggle done">
               <Check className="size-4" />
             </Button>
-            <Button size="icon" variant="ghost" onClick={remove} title="Remove">
-              <Trash2 className="size-4 text-destructive" />
+            <Button size="icon" variant="outline" className="rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={remove} title="Remove">
+              <Trash2 className="size-4 text-muted-foreground hover:text-destructive transition-colors" />
             </Button>
-          </>
+          </div>
         )}
       </div>
       <RecipeDialog open={recipeOpen} onOpenChange={setRecipeOpen} id={dish.spoonacular_id} />

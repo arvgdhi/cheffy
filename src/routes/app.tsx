@@ -116,22 +116,12 @@ function WishlistSection() {
 
 function EmptyWishlist() {
   return (
-    <div className="relative h-[40vh] flex items-center justify-center">
-      <div className="absolute inset-0 flex items-center justify-center opacity-[0.07] pointer-events-none">
-        <svg viewBox="0 0 200 200" className="w-64 h-64">
-          <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" strokeWidth="4" />
-          <circle cx="100" cy="100" r="55" fill="none" stroke="currentColor" strokeWidth="2" />
-          <rect x="30" y="60" width="6" height="80" rx="2" fill="currentColor" />
-          <path
-            d="M28 60 L28 75 M34 60 L34 75 M40 60 L40 75"
-            stroke="currentColor"
-            strokeWidth="3"
-          />
-          <rect x="164" y="60" width="6" height="80" rx="2" fill="currentColor" />
-          <ellipse cx="167" cy="68" rx="8" ry="14" fill="currentColor" />
-        </svg>
+    <div className="relative h-[40vh] flex flex-col items-center justify-center text-center px-4">
+      <div className="size-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/50">
+        <Utensils className="size-8 text-muted-foreground/50" />
       </div>
-      <p className="relative text-muted-foreground font-medium">No wishlists yet</p>
+      <p className="text-muted-foreground font-medium text-lg tracking-tight">Your wishlist is empty</p>
+      <p className="text-sm text-muted-foreground mt-1 max-w-[200px]">Tap the + button to search and add a dish.</p>
     </div>
   );
 }
@@ -159,7 +149,7 @@ function WishlistCard({
     }
   }
   return (
-    <div className="group relative rounded-2xl border bg-card overflow-hidden">
+    <div className="group relative rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden hover:shadow-md hover:border-primary/20 transition-all duration-300">
       <div className="aspect-square bg-muted overflow-hidden">
         {item.dish_image && (
           <img
@@ -179,7 +169,7 @@ function WishlistCard({
       </div>
       <button
         onClick={onRemove}
-        className="absolute top-2 right-2 size-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+        className="absolute top-2 right-2 size-8 rounded-full bg-background/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-background transition-all shadow-sm cursor-pointer"
       >
         <Trash2 className="size-3.5 text-destructive" />
       </button>
@@ -365,7 +355,7 @@ function LeaderboardSection({ isCook }: { isCook: boolean }) {
                 <button
                   disabled={!isCook}
                   onClick={() => isCook && setScheduleFor(d)}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl border bg-card hover:bg-muted/50 transition text-left disabled:cursor-default disabled:hover:bg-card"
+                  className="group w-full flex items-center gap-3 p-3 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm hover:bg-muted/50 hover:shadow-sm transition-all duration-200 text-left disabled:cursor-default disabled:hover:bg-card/50 disabled:hover:shadow-none disabled:hover:translate-y-0"
                 >
                   <span
                     className={`size-9 rounded-full flex items-center justify-center font-display font-semibold ${i === 0 ? "bg-primary text-primary-foreground" : i < 3 ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}

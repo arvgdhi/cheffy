@@ -79,9 +79,11 @@ function Onboarding() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="px-6 py-6 flex items-center gap-2">
-        <ChefHat className="size-6 text-primary" />
-        <span className="font-display text-xl font-semibold">Panarchy</span>
+      <header className="px-6 py-6 flex items-center gap-2 group w-fit">
+        <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <ChefHat className="size-6 text-primary" />
+        </div>
+        <span className="font-display text-2xl font-semibold tracking-tight">Cheffy</span>
       </header>
       <main className="flex-1 flex items-center justify-center px-6 pb-12">
         <div className="w-full max-w-md">
