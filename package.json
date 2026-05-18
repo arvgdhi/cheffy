@@ -2,11 +2,11 @@
   "name": "cheffy",
   "packageManager": "bun@1.2.15",
   "private": true,
-  "sideEffects": false,
   "type": "module",
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "deploy": "wrangler deploy",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
