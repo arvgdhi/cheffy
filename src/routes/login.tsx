@@ -24,6 +24,9 @@ function LoginPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Welcome back!");
+    // Wait a tick for the session to be persisted to localStorage
+    // before navigating, so /app sees the session immediately
+    await new Promise((r) => setTimeout(r, 150));
     navigate({ to: "/app" });
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate, Link, useRouter } from "@tanstack/react-router";
 import { ChefHat, LogOut, BookOpen } from "lucide-react";
@@ -13,8 +13,11 @@ export function useEnsureHousehold() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const fetchProfile = useServerFn(getMyProfile);
+  const fetchProfileRef = useRef(fetchProfile);
+  fetchProfileRef.current = fetchProfile;
   const [data, setData] = useState<ProfileData | null>(null);
   const [ready, setReady] = useState(false);
+  const didRun = useRef(false);
 
   useEffect(() => {
     if (loading) return;
@@ -22,7 +25,11 @@ export function useEnsureHousehold() {
       navigate({ to: "/login" });
       return;
     }
-    fetchProfile()
+    // Guard against duplicate runs for the same user
+    if (didRun.current) return;
+    didRun.current = true;
+
+    fetchProfileRef.current()
       .then((r) => {
         if (!r.profile?.household_id) {
           navigate({ to: "/onboarding" });
@@ -31,8 +38,12 @@ export function useEnsureHousehold() {
         setData(r);
         setReady(true);
       })
-      .catch(() => navigate({ to: "/login" }));
-  }, [user, loading, navigate, fetchProfile]);
+      .catch((err) => {
+        console.error("[useEnsureHousehold] fetchProfile failed:", err);
+        // Only redirect if it's genuinely an auth error, not a transient server error
+        didRun.current = false; // allow retry
+      });
+  }, [user, loading, navigate]);
 
   return { data, ready };
 }

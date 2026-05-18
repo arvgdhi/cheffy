@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -34,18 +34,21 @@ function Onboarding() {
   const [role, setRole] = useState<"cook" | "member" | "both">("member");
   const [busy, setBusy] = useState(false);
 
+  const fetchProfileRef = useRef(fetchProfile);
+  fetchProfileRef.current = fetchProfile;
+
   useEffect(() => {
     if (loading) return;
     if (!user) {
       navigate({ to: "/login" });
       return;
     }
-    fetchProfile()
+    fetchProfileRef.current()
       .then((r) => {
         if (r.profile?.household_id) navigate({ to: "/app" });
       })
       .catch(() => {});
-  }, [user, loading, navigate, fetchProfile]);
+  }, [user, loading, navigate]);
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();

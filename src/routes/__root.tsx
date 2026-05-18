@@ -133,13 +133,23 @@ function AuthSync() {
   const router = useRouter();
   const queryClient = useQueryClient();
   useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      router.invalidate();
-      queryClient.invalidateQueries();
+    } = supabase.auth.onAuthStateChange((_event) => {
+      // Skip the initial session event to prevent unnecessary invalidation on mount
+      if (_event === "INITIAL_SESSION") return;
+      // Debounce to prevent rapid-fire invalidations during login/signup
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        router.invalidate();
+        queryClient.invalidateQueries();
+      }, 100);
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      subscription.unsubscribe();
+    };
   }, [router, queryClient]);
   return null;
 }
