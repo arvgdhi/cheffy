@@ -14,12 +14,12 @@ function Landing() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] bg-accent/10 blur-[120px] rounded-full pointer-events-none" />
 
       <header className="px-6 md:px-10 py-6 flex items-center justify-between relative z-10 max-w-7xl mx-auto w-full">
-        <div className="flex items-center gap-2 group cursor-pointer">
+        <Link to="/" className="flex items-center gap-2 group cursor-pointer">
           <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
             <ChefHat className="size-6 text-primary" />
           </div>
           <span className="font-display text-2xl font-semibold tracking-tight">Cheffy</span>
-        </div>
+        </Link>
         <div className="flex gap-3">
           <Link to="/login">
             <Button variant="ghost" className="font-medium hover:bg-muted/50 rounded-xl">Log in</Button>

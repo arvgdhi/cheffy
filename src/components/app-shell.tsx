@@ -58,7 +58,7 @@ export function AppHeader({ data }: { data: ProfileData }) {
   return (
     <header className="px-5 md:px-8 py-4 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-        <Link to="/app" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-2 group">
           <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
             <ChefHat className="size-5 text-primary" />
           </div>

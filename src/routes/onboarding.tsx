@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -82,11 +82,13 @@ function Onboarding() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="px-6 py-6 flex items-center gap-2 group w-fit">
-        <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-          <ChefHat className="size-6 text-primary" />
-        </div>
-        <span className="font-display text-2xl font-semibold tracking-tight">Cheffy</span>
+      <header className="px-6 py-6">
+        <Link to="/" className="flex items-center gap-2 group w-fit">
+          <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <ChefHat className="size-6 text-primary" />
+          </div>
+          <span className="font-display text-2xl font-semibold tracking-tight">Cheffy</span>
+        </Link>
       </header>
       <main className="flex-1 flex items-center justify-center px-6 pb-12">
         <div className="w-full max-w-md">
