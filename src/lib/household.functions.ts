@@ -69,12 +69,12 @@ export const createHousehold = createServerFn({ method: "POST" })
 
     const { error: pErr } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id: userId,
         display_name: data.displayName,
         household_id: household.id,
         role: data.role,
-      })
-      .eq("id", userId);
+      });
     if (pErr) throw new Error(pErr.message);
 
     return { household };
@@ -103,12 +103,12 @@ export const joinHousehold = createServerFn({ method: "POST" })
 
     const { error: pErr } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id: userId,
         display_name: data.displayName,
         household_id: h.id,
         role: data.role,
-      })
-      .eq("id", userId);
+      });
     if (pErr) throw new Error(pErr.message);
 
     return { household: h };

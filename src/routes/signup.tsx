@@ -25,8 +25,18 @@ function SignupPage() {
       options: { emailRedirectTo: `${window.location.origin}/app` },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("already exists")) {
+        toast.error("Account already exists. Please log in.");
+        navigate({ to: "/login" });
+        return;
+      }
+      return toast.error(error.message);
+    }
     toast.success("Account created. Let's set up your household.");
+    
+    // Wait a tick for the session to be persisted
+    await new Promise((r) => setTimeout(r, 150));
     navigate({ to: "/onboarding" });
   }
 
