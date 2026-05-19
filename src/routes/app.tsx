@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useEnsureHousehold, AppHeader } from "@/components/app-shell";
+import { DishDetailsDialog } from "@/components/dish-details-dialog";
 import { searchDishes, type SearchResult } from "@/lib/spoonacular.functions";
 import {
   addToWishlist,
@@ -80,6 +81,7 @@ function WishlistSection() {
   const fetchWishlist = useServerFn(getWishlist);
   const { data, isLoading } = useQuery({ queryKey: ["wishlist"], queryFn: () => fetchWishlist() });
   const [searchOpen, setSearchOpen] = useState(false);
+  const [detailsId, setDetailsId] = useState<number | null>(null);
 
   return (
     <section>
@@ -97,7 +99,7 @@ function WishlistSection() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {data.items.map((item) => (
-              <WishlistCard key={item.id} item={item} />
+              <WishlistCard key={item.id} item={item} onClick={() => setDetailsId(item.spoonacular_id)} />
             ))}
           </div>
         )}
@@ -110,6 +112,7 @@ function WishlistSection() {
         <Plus className="size-6" />
       </Button>
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+      <DishDetailsDialog dishId={detailsId} open={detailsId !== null} onOpenChange={(o) => !o && setDetailsId(null)} />
     </section>
   );
 }
@@ -128,13 +131,16 @@ function EmptyWishlist() {
 
 function WishlistCard({
   item,
+  onClick,
 }: {
   item: {
     id: string;
+    spoonacular_id: number;
     dish_name: string;
     dish_image: string | null;
     nutrition_score: number | null;
   };
+  onClick: () => void;
 }) {
   const qc = useQueryClient();
   const removeFn = useServerFn(removeFromWishlist);
@@ -149,7 +155,10 @@ function WishlistCard({
     }
   }
   return (
-    <div className="group relative rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden hover:shadow-md hover:border-primary/20 transition-all duration-300">
+    <div 
+      className="group relative rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden hover:shadow-md hover:border-primary/20 transition-all duration-300 cursor-pointer"
+      onClick={onClick}
+    >
       <div className="aspect-square bg-muted overflow-hidden">
         {item.dish_image && (
           <img
@@ -168,7 +177,7 @@ function WishlistCard({
         </div>
       </div>
       <button
-        onClick={onRemove}
+        onClick={(e) => { e.stopPropagation(); onRemove(); }}
         className="absolute top-2 right-2 size-8 rounded-full bg-background/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-background transition-all shadow-sm cursor-pointer"
       >
         <Trash2 className="size-3.5 text-destructive" />
@@ -331,6 +340,7 @@ function LeaderboardSection({ isCook }: { isCook: boolean }) {
     dishName: string;
     dishImage: string | null;
   }>(null);
+  const [detailsId, setDetailsId] = useState<number | null>(null);
 
   return (
     <section>
@@ -352,10 +362,9 @@ function LeaderboardSection({ isCook }: { isCook: boolean }) {
           <ol className="space-y-2">
             {data.leaderboard.map((d, i) => (
               <li key={d.spoonacularId}>
-                <button
-                  disabled={!isCook}
-                  onClick={() => isCook && setScheduleFor(d)}
-                  className="group w-full flex items-center gap-3 p-3 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm hover:bg-muted/50 hover:shadow-sm transition-all duration-200 text-left disabled:cursor-default disabled:hover:bg-card/50 disabled:hover:shadow-none disabled:hover:translate-y-0"
+                <div
+                  onClick={() => setDetailsId(d.spoonacularId)}
+                  className="group w-full flex items-center gap-3 p-3 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm hover:bg-muted/50 hover:shadow-sm transition-all duration-200 text-left cursor-pointer"
                 >
                   <span
                     className={`size-9 rounded-full flex items-center justify-center font-display font-semibold ${i === 0 ? "bg-primary text-primary-foreground" : i < 3 ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}
@@ -377,14 +386,26 @@ function LeaderboardSection({ isCook }: { isCook: boolean }) {
                       {d.votes} {d.votes === 1 ? "wish" : "wishes"}
                     </p>
                   </div>
-                  {isCook && <CalendarPlus className="size-4 text-muted-foreground" />}
-                </button>
+                  {isCook && (
+                    <Button 
+                      size="sm" 
+                      variant="secondary" 
+                      className="ml-auto shrink-0"
+                      onClick={(e) => { e.stopPropagation(); setScheduleFor(d); }}
+                    >
+                      <CalendarPlus className="size-4 mr-1.5 hidden sm:inline" />
+                      <span className="hidden sm:inline">Schedule</span>
+                      <CalendarPlus className="size-4 sm:hidden" />
+                    </Button>
+                  )}
+                </div>
               </li>
             ))}
           </ol>
         )}
       </div>
       <ScheduleDialog dish={scheduleFor} onClose={() => setScheduleFor(null)} />
+      <DishDetailsDialog dishId={detailsId} open={detailsId !== null} onOpenChange={(o) => !o && setDetailsId(null)} />
     </section>
   );
 }

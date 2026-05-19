@@ -70,11 +70,13 @@ export const getDishDetails = createServerFn({ method: "POST" })
         })) ?? [],
       nutritionScore: extractHealthScore(r),
       nutrients:
-        r.nutrition?.nutrients?.slice(0, 6).map((n) => ({
-          name: n.name,
-          amount: n.amount,
-          unit: n.unit,
-        })) ?? [],
+        r.nutrition?.nutrients
+          ?.filter((n) => ["Calories", "Fat", "Carbohydrates", "Protein"].includes(n.name))
+          .map((n) => ({
+            name: n.name,
+            amount: n.amount,
+            unit: n.unit,
+          })) ?? [],
     };
   });
 

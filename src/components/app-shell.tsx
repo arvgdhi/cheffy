@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate, Link, useRouter } from "@tanstack/react-router";
-import { ChefHat, LogOut, BookOpen } from "lucide-react";
+import { ChefHat, LogOut, BookOpen, UserPlus, Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { getMyProfile } from "@/lib/household.functions";
+import { getMyProfile, regenerateInviteCode } from "@/lib/household.functions";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export type ProfileData = Awaited<ReturnType<typeof getMyProfile>>;
 
@@ -50,7 +52,13 @@ export function useEnsureHousehold() {
 
 export function AppHeader({ data }: { data: ProfileData }) {
   const router = useRouter();
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [localInviteCode, setLocalInviteCode] = useState(data.household?.invite_code);
   const isCook = data.profile?.role === "cook" || data.profile?.role === "both";
+  const isCreator = data.profile?.id === data.household?.created_by;
+  const regenFn = useServerFn(regenerateInviteCode);
+  const [regenBusy, setRegenBusy] = useState(false);
+
   async function signOut() {
     await supabase.auth.signOut();
     router.navigate({ to: "/" });
@@ -66,10 +74,10 @@ export function AppHeader({ data }: { data: ProfileData }) {
         </Link>
         <div className="flex items-center gap-2">
           {data.household && (
-            <span className="hidden sm:inline text-xs text-muted-foreground">
-              {data.household.name} ·{" "}
-              <span className="font-mono">{data.household.invite_code}</span>
-            </span>
+            <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)} className="hidden sm:flex hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-colors">
+              <UserPlus className="size-4 mr-1.5" />
+              Invite
+            </Button>
           )}
           {isCook && (
             <Link to="/cook">
@@ -84,6 +92,65 @@ export function AppHeader({ data }: { data: ProfileData }) {
           </Button>
         </div>
       </div>
+      
+      {data.household && (
+        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Invite to {data.household.name}</DialogTitle>
+              <DialogDescription>
+                Share this code with your family members so they can join your household.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center space-x-2 mt-4">
+              <div className="grid flex-1 gap-2">
+                <div className="flex h-12 w-full items-center justify-center rounded-md border border-input bg-muted/50 px-3 py-2 text-3xl tracking-[0.5em] font-mono font-medium text-foreground">
+                  {localInviteCode}
+                </div>
+              </div>
+              <Button 
+                type="submit" 
+                size="icon" 
+                className="h-12 w-12 shrink-0" 
+                onClick={() => {
+                  navigator.clipboard.writeText(localInviteCode ?? "");
+                  toast.success("Invite code copied!");
+                }}
+              >
+                <Copy className="size-5" />
+              </Button>
+            </div>
+            {isCreator && (
+              <DialogFooter className="sm:justify-start mt-6 border-t pt-4">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-muted-foreground hover:text-foreground"
+                  disabled={regenBusy}
+                  onClick={async () => {
+                    setRegenBusy(true);
+                    try {
+                      const res = await regenFn();
+                      if (res?.household?.invite_code) {
+                        setLocalInviteCode(res.household.invite_code);
+                        toast.success("New invite code generated");
+                      }
+                    } catch (e) {
+                      toast.error((e as Error).message);
+                    } finally {
+                      setRegenBusy(false);
+                    }
+                  }}
+                >
+                  <RefreshCw className={`size-4 mr-1.5 ${regenBusy ? "animate-spin" : ""}`} />
+                  Generate new code
+                </Button>
+              </DialogFooter>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </header>
   );
 }

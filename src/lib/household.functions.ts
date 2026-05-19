@@ -22,11 +22,11 @@ export const getMyProfile = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
 
-    let household = null as null | { id: string; name: string; invite_code: string };
+    let household = null as null | { id: string; name: string; invite_code: string; created_by: string };
     if (profile?.household_id) {
       const { data: h } = await supabase
         .from("households")
-        .select("id, name, invite_code")
+        .select("id, name, invite_code, created_by")
         .eq("id", profile.household_id)
         .maybeSingle();
       household = h ?? null;
@@ -125,4 +125,45 @@ export const getHouseholdMembers = createServerFn({ method: "GET" })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
     return { members: data ?? [] };
+  });
+
+export const regenerateInviteCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!profile?.household_id) throw new Error("No household");
+
+    const { data: h } = await supabase
+      .from("households")
+      .select("created_by")
+      .eq("id", profile.household_id)
+      .maybeSingle();
+    
+    if (h?.created_by !== userId) throw new Error("Only the creator can regenerate the invite code.");
+
+    let inviteCode = generateInviteCode();
+    for (let i = 0; i < 5; i++) {
+      const { data: existing } = await supabase
+        .from("households")
+        .select("id")
+        .eq("invite_code", inviteCode)
+        .maybeSingle();
+      if (!existing) break;
+      inviteCode = generateInviteCode();
+    }
+
+    const { data: newH, error } = await supabase
+      .from("households")
+      .update({ invite_code: inviteCode })
+      .eq("id", profile.household_id)
+      .select("id, name, invite_code, created_by")
+      .single();
+    if (error) throw new Error(error.message);
+
+    return { household: newH };
   });

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEnsureHousehold, AppHeader } from "@/components/app-shell";
 import { getScheduledDishes, toggleCompleted, deleteScheduledDish } from "@/lib/schedule.functions";
-import { getDishDetails } from "@/lib/spoonacular.functions";
+import { DishDetailsDialog } from "@/components/dish-details-dialog";
 
 export const Route = createFileRoute("/cook")({
   component: CookPage,
@@ -149,104 +149,7 @@ function ScheduledCard({
           </div>
         )}
       </div>
-      <RecipeDialog open={recipeOpen} onOpenChange={setRecipeOpen} id={dish.spoonacular_id} />
+      <DishDetailsDialog dishId={dish.spoonacular_id} open={recipeOpen} onOpenChange={setRecipeOpen} />
     </div>
-  );
-}
-
-function RecipeDialog({
-  open,
-  onOpenChange,
-  id,
-}: {
-  open: boolean;
-  onOpenChange: (b: boolean) => void;
-  id: number;
-}) {
-  const fetchDetails = useServerFn(getDishDetails);
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["recipe", id],
-    queryFn: () => fetchDetails({ data: { id } }),
-    enabled: open,
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{data?.title ?? "Recipe"}</DialogTitle>
-        </DialogHeader>
-        {isLoading && (
-          <div className="py-12 flex justify-center">
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
-          </div>
-        )}
-        {error && <p className="text-destructive text-sm">{(error as Error).message}</p>}
-        {data && (
-          <div className="space-y-5">
-            {data.image && (
-              <img
-                src={data.image}
-                alt={data.title}
-                className="w-full rounded-xl object-cover max-h-64"
-              />
-            )}
-            <div className="flex flex-wrap gap-2 text-xs">
-              {data.readyInMinutes != null && (
-                <span className="px-2 py-1 rounded-full bg-secondary">
-                  {data.readyInMinutes} min
-                </span>
-              )}
-              {data.servings != null && (
-                <span className="px-2 py-1 rounded-full bg-secondary">
-                  {data.servings} servings
-                </span>
-              )}
-              <span className="px-2 py-1 rounded-full bg-accent/30">
-                Nutrition {data.nutritionScore}/100
-              </span>
-            </div>
-            {data.summary && (
-              <div
-                className="text-sm text-muted-foreground prose-sm"
-                dangerouslySetInnerHTML={{ __html: data.summary }}
-              />
-            )}
-            {data.ingredients.length > 0 && (
-              <div>
-                <h3 className="font-display font-semibold mb-2">Ingredients</h3>
-                <ul className="space-y-1 text-sm">
-                  {data.ingredients.map((i, idx) => (
-                    <li key={idx}>• {i.original}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {data.instructions.length > 0 && (
-              <div>
-                <h3 className="font-display font-semibold mb-2">Instructions</h3>
-                <ol className="space-y-2 text-sm">
-                  {data.instructions.map((s) => (
-                    <li key={s.number}>
-                      <span className="font-semibold">{s.number}.</span> {s.step}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-            {data.sourceUrl && (
-              <a
-                href={data.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary underline"
-              >
-                Original source
-              </a>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
   );
 }
