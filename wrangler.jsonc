@@ -6,7 +6,8 @@
     "SUPABASE_URL": "https://giagosksljmnpyohzrdl.supabase.co",
     "VITE_SUPABASE_PROJECT_ID": "giagosksljmnpyohzrdl",
     "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_UEmgWgRhEdSaaBcAAv-qvA_s9krlV65",
-    "VITE_SUPABASE_URL": "https://giagosksljmnpyohzrdl.supabase.co"
+    "VITE_SUPABASE_URL": "https://giagosksljmnpyohzrdl.supabase.co",
+    "SPOONACULAR_API_KEY": "daa462bd432c4b39a033ee453af4b964"
   },
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
