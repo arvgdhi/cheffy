@@ -101,10 +101,10 @@ function AppPage() {
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
-      {(!tomorrowSelections || tomorrowSelections.selections.length < 5) && !bypassForceToSettings && <FloatingIconsBackground />}
+      {isForced && <FloatingIconsBackground />}
 
       {!isForced && (
-        <header className="px-5 md:px-8 py-2 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors flex items-center justify-between">
+        <header className="px-5 md:px-8 py-2 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
           <div className="max-w-3xl mx-auto flex items-center justify-between w-full">
             <div className="flex items-center gap-2 group">
               <div className="size-7 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -119,25 +119,25 @@ function AppPage() {
         </header>
       )}
 
-      <main className={`flex-1 overflow-y-auto ${!isForced ? 'pb-20' : ''}`}>
-        <div className="max-w-3xl mx-auto px-4 md:px-8 py-4 h-full relative">
-          {isForced ? (
-            <SelectionForceScreen 
-              date={tomorrowStr} 
-              initialSelections={tomorrowSelections?.selections?.map(s => s.dish_id) ?? []} 
-              onSettingsClick={() => setBypassForceToSettings(true)}
-              onAddClick={() => setAddOpen(true)}
-            />
-          ) : (
+      {isForced ? (
+        <SelectionForceScreen
+          date={tomorrowStr}
+          initialSelections={tomorrowSelections?.selections?.map(s => s.dish_id) ?? []}
+          onSettingsClick={() => setBypassForceToSettings(true)}
+          onAddDish={() => setAddOpen(true)}
+        />
+      ) : (
+        <main className="flex-1 overflow-y-auto pb-20">
+          <div className="max-w-3xl mx-auto px-4 md:px-8 py-4">
             <div className="page-transition-enter">
               {activeTab === "selections" && <SelectionsTab />}
               {activeTab === "dishlist" && <DishlistTab />}
               {activeTab === "leaderboard" && <LeaderboardTab isCook={data.profile?.role === "cook" || data.profile?.role === "both"} />}
               {activeTab === "settings" && <SettingsTab data={data} />}
             </div>
-          )}
-        </div>
-      </main>
+          </div>
+        </main>
+      )}
 
       {!isForced && (
         <BottomBar activeTab={activeTab} onChange={setActiveTab} onAddClick={() => setAddOpen(true)} />
@@ -149,66 +149,98 @@ function AppPage() {
 }
 
 function FloatingIconsBackground() {
+  const icons = [
+    { Icon: Utensils, size: "size-10", color: "text-primary", delay: "0s", anim: "animate-float-1", left: "8%" },
+    { Icon: Camera, size: "size-8", color: "text-accent", delay: "1.5s", anim: "animate-float-2", left: "22%" },
+    { Icon: Trophy, size: "size-12", color: "text-primary", delay: "0.5s", anim: "animate-float-3", left: "36%" },
+    { Icon: ListChecks, size: "size-9", color: "text-accent", delay: "2s", anim: "animate-float-1", left: "52%" },
+    { Icon: ImagePlus, size: "size-11", color: "text-primary", delay: "1s", anim: "animate-float-2", left: "66%" },
+    { Icon: Utensils, size: "size-7", color: "text-accent", delay: "3s", anim: "animate-float-3", left: "80%" },
+    { Icon: Trophy, size: "size-8", color: "text-primary", delay: "2.5s", anim: "animate-float-1", left: "92%" },
+  ];
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-40">
-      <div className="absolute bottom-[-20%] left-[10%] animate-float-1"><Utensils className="size-12 text-primary/30" /></div>
-      <div className="absolute bottom-[-20%] left-[30%] animate-float-2"><ImagePlus className="size-8 text-accent/40" /></div>
-      <div className="absolute bottom-[-20%] left-[50%] animate-float-3" style={{ animationDelay: '2s' }}><ListChecks className="size-16 text-primary/20" /></div>
-      <div className="absolute bottom-[-20%] left-[70%] animate-float-1" style={{ animationDelay: '1s' }}><Trophy className="size-10 text-secondary-foreground/20" /></div>
-      <div className="absolute bottom-[-20%] left-[90%] animate-float-2" style={{ animationDelay: '3s' }}><Camera className="size-14 text-accent/30" /></div>
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      {icons.map(({ Icon, size, color, delay, anim, left }, i) => (
+        <div
+          key={i}
+          className={`absolute ${anim} opacity-20`}
+          style={{ bottom: "-10%", left, animationDelay: delay }}
+        >
+          <Icon className={`${size} ${color}`} />
+        </div>
+      ))}
     </div>
   );
 }
 
-function SelectionForceScreen({ 
-  date, 
-  initialSelections, 
-  onSettingsClick, 
-  onAddClick 
-}: { 
-  date: string, 
-  initialSelections: string[], 
-  onSettingsClick: () => void,
-  onAddClick: () => void
+function SelectionForceScreen({
+  date,
+  initialSelections,
+  onSettingsClick,
+  onAddDish,
+}: {
+  date: string;
+  initialSelections: string[];
+  onSettingsClick: () => void;
+  onAddDish: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center relative z-10 page-transition-enter">
-      <div className="text-center mb-8">
-        <h1 className="font-display text-4xl font-bold mb-2 tracking-tight">Tomorrow's Menu</h1>
+    <div className="fixed inset-0 z-10 flex flex-col items-center justify-center page-transition-enter">
+      <div className="text-center mb-10 px-4">
+        <h1 className="font-display text-4xl font-bold mb-3 tracking-tight">Tomorrow's Menu</h1>
         <p className="text-muted-foreground max-w-xs mx-auto">
-          Please select at least 5 dishes you'd like to eat tomorrow to continue.
+          Select at least 5 dishes you'd like to eat tomorrow to continue.
         </p>
       </div>
-      
-      <button 
+
+      <button
         onClick={() => setOpen(true)}
-        className="size-48 rounded-full bg-primary text-primary-foreground shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex flex-col items-center justify-center gap-3 animate-pulse"
-        style={{ animationDuration: '3s' }}
+        className="size-52 rounded-full bg-primary text-primary-foreground shadow-2xl hover:shadow-primary/30 hover:scale-105 active:scale-95 transition-all duration-300 flex flex-col items-center justify-center gap-3"
+        style={{ animation: 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
       >
-        <ListChecks className="size-12" />
-        <span className="font-semibold text-lg">Select Dishes</span>
+        <ListChecks className="size-14" />
+        <span className="font-semibold text-xl">Select Dishes</span>
       </button>
 
-      <div className="absolute bottom-4 left-4 flex gap-2">
-        <Button onClick={onAddClick} variant="outline" className="rounded-full shadow-md bg-background/80 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground transition-colors">
-          <Plus className="size-5 mr-2" /> Add Dish
+      {/* Discreet settings bottom-right */}
+      <div className="fixed bottom-5 right-5">
+        <Button
+          onClick={onSettingsClick}
+          variant="ghost"
+          size="icon"
+          className="rounded-full size-10 bg-background/60 backdrop-blur-sm border border-border/40 shadow-sm"
+          aria-label="Settings"
+        >
+          <Settings className="size-4 text-muted-foreground" />
         </Button>
       </div>
 
-      <div className="absolute bottom-4 right-4">
-        <Button onClick={onSettingsClick} variant="ghost" size="icon" className="rounded-full bg-background/50 backdrop-blur-sm" aria-label="Settings">
-          <Settings className="size-5 text-muted-foreground" />
-        </Button>
-      </div>
-
-      <SelectionDialog open={open} onOpenChange={setOpen} date={date} initialSelections={initialSelections} />
+      <SelectionDialog
+        open={open}
+        onOpenChange={setOpen}
+        date={date}
+        initialSelections={initialSelections}
+        onAddDish={onAddDish}
+      />
     </div>
   );
 }
 
-function SelectionDialog({ open, onOpenChange, date, initialSelections }: { open: boolean, onOpenChange: (open: boolean) => void, date: string, initialSelections: string[] }) {
+function SelectionDialog({
+  open,
+  onOpenChange,
+  date,
+  initialSelections,
+  onAddDish,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  date: string;
+  initialSelections: string[];
+  onAddDish?: () => void;
+}) {
   const fetchDishlist = useServerFn(getHouseholdDishlist);
   const saveFn = useServerFn(saveSelections);
   const qc = useQueryClient();
@@ -253,22 +285,42 @@ function SelectionDialog({ open, onOpenChange, date, initialSelections }: { open
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Select Dishes for {date}</DialogTitle>
-          <DialogDescription>Tap to select. Choose at least 5 ({selected.size} selected).</DialogDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <DialogTitle>Select Dishes for {date}</DialogTitle>
+              <DialogDescription className="mt-1">Tap to select. Choose at least 5 ({selected.size} selected).</DialogDescription>
+            </div>
+            {onAddDish && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 mt-0.5"
+                onClick={() => { onOpenChange(false); onAddDish(); }}
+              >
+                <Plus className="size-4 mr-1.5" /> Add Dish
+              </Button>
+            )}
+          </div>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto min-h-[40vh] py-4">
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="size-6 animate-spin" /></div>
           ) : !data || data.items.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No dishes available. Ask your cook to add some!
+            <div className="text-center py-8 text-muted-foreground space-y-3">
+              <Utensils className="size-10 mx-auto opacity-30" />
+              <p>No dishes yet in your household.</p>
+              {onAddDish && (
+                <Button variant="secondary" onClick={() => { onOpenChange(false); onAddDish(); }}>
+                  <Plus className="size-4 mr-1.5" /> Add the first dish
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {data.items.map(dish => {
                 const isSel = selected.has(dish.dish_id);
                 return (
-                  <div 
+                  <div
                     key={dish.dish_id}
                     onClick={() => toggle(dish.dish_id)}
                     className={`relative rounded-xl border p-2 cursor-pointer transition-all ${isSel ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border/50 hover:border-primary/30'}`}
