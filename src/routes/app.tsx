@@ -65,6 +65,7 @@ function AppPage() {
   const { data, ready } = useEnsureHousehold();
   const [activeTab, setActiveTab] = useState<Tab>("selections");
   const [addOpen, setAddOpen] = useState(false);
+  const [bypassForceToSettings, setBypassForceToSettings] = useState(false);
 
   const fetchSelections = useServerFn(getMySelections);
   
@@ -96,21 +97,24 @@ function AppPage() {
     );
   }
 
-  const isForced = !tomorrowSelections || tomorrowSelections.selections.length < 5;
+  const isForced = (!tomorrowSelections || tomorrowSelections.selections.length < 5) && !bypassForceToSettings;
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
-      {isForced && <FloatingIconsBackground />}
+      {(!tomorrowSelections || tomorrowSelections.selections.length < 5) && !bypassForceToSettings && <FloatingIconsBackground />}
 
       {!isForced && (
-        <header className="px-5 md:px-8 py-2 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
-          <div className="max-w-3xl mx-auto flex items-center justify-between">
+        <header className="px-5 md:px-8 py-2 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 transition-colors flex items-center justify-between">
+          <div className="max-w-3xl mx-auto flex items-center justify-between w-full">
             <div className="flex items-center gap-2 group">
               <div className="size-7 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Utensils className="size-4 text-primary" />
               </div>
               <span className="font-display font-semibold tracking-tight text-base">Cheffy</span>
             </div>
+            {bypassForceToSettings && (
+               <Button variant="ghost" size="sm" onClick={() => setBypassForceToSettings(false)}>Back to Selections</Button>
+            )}
           </div>
         </header>
       )}
@@ -118,7 +122,12 @@ function AppPage() {
       <main className={`flex-1 overflow-y-auto ${!isForced ? 'pb-20' : ''}`}>
         <div className="max-w-3xl mx-auto px-4 md:px-8 py-4 h-full relative">
           {isForced ? (
-            <SelectionForceScreen date={tomorrowStr} initialSelections={tomorrowSelections?.selections?.map(s => s.dish_id) ?? []} />
+            <SelectionForceScreen 
+              date={tomorrowStr} 
+              initialSelections={tomorrowSelections?.selections?.map(s => s.dish_id) ?? []} 
+              onSettingsClick={() => setBypassForceToSettings(true)}
+              onAddClick={() => setAddOpen(true)}
+            />
           ) : (
             <div className="page-transition-enter">
               {activeTab === "selections" && <SelectionsTab />}
@@ -142,16 +151,26 @@ function AppPage() {
 function FloatingIconsBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-40">
-      <div className="absolute top-[110%] left-[10%] animate-float-1"><Utensils className="size-12 text-primary/30" /></div>
-      <div className="absolute top-[110%] left-[30%] animate-float-2"><ImagePlus className="size-8 text-accent/40" /></div>
-      <div className="absolute top-[110%] left-[50%] animate-float-3" style={{ animationDelay: '2s' }}><ListChecks className="size-16 text-primary/20" /></div>
-      <div className="absolute top-[110%] left-[70%] animate-float-1" style={{ animationDelay: '1s' }}><Trophy className="size-10 text-secondary-foreground/20" /></div>
-      <div className="absolute top-[110%] left-[90%] animate-float-2" style={{ animationDelay: '3s' }}><Camera className="size-14 text-accent/30" /></div>
+      <div className="absolute bottom-[-20%] left-[10%] animate-float-1"><Utensils className="size-12 text-primary/30" /></div>
+      <div className="absolute bottom-[-20%] left-[30%] animate-float-2"><ImagePlus className="size-8 text-accent/40" /></div>
+      <div className="absolute bottom-[-20%] left-[50%] animate-float-3" style={{ animationDelay: '2s' }}><ListChecks className="size-16 text-primary/20" /></div>
+      <div className="absolute bottom-[-20%] left-[70%] animate-float-1" style={{ animationDelay: '1s' }}><Trophy className="size-10 text-secondary-foreground/20" /></div>
+      <div className="absolute bottom-[-20%] left-[90%] animate-float-2" style={{ animationDelay: '3s' }}><Camera className="size-14 text-accent/30" /></div>
     </div>
   );
 }
 
-function SelectionForceScreen({ date, initialSelections }: { date: string, initialSelections: string[] }) {
+function SelectionForceScreen({ 
+  date, 
+  initialSelections, 
+  onSettingsClick, 
+  onAddClick 
+}: { 
+  date: string, 
+  initialSelections: string[], 
+  onSettingsClick: () => void,
+  onAddClick: () => void
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -172,8 +191,14 @@ function SelectionForceScreen({ date, initialSelections }: { date: string, initi
         <span className="font-semibold text-lg">Select Dishes</span>
       </button>
 
+      <div className="absolute bottom-4 left-4 flex gap-2">
+        <Button onClick={onAddClick} variant="outline" className="rounded-full shadow-md bg-background/80 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground transition-colors">
+          <Plus className="size-5 mr-2" /> Add Dish
+        </Button>
+      </div>
+
       <div className="absolute bottom-4 right-4">
-        <Button variant="ghost" size="icon" className="rounded-full bg-background/50 backdrop-blur-sm" aria-label="Settings">
+        <Button onClick={onSettingsClick} variant="ghost" size="icon" className="rounded-full bg-background/50 backdrop-blur-sm" aria-label="Settings">
           <Settings className="size-5 text-muted-foreground" />
         </Button>
       </div>
