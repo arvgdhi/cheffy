@@ -19,6 +19,7 @@ import {
   UserPlus,
   CheckCircle2,
   Circle,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -227,20 +228,21 @@ function SelectionForceScreen({
 
   return (
     <div className="fixed inset-0 z-10 flex flex-col items-center justify-center page-transition-enter">
-      <div className="text-center mb-10 px-4">
-        <h1 className="font-display text-4xl font-bold mb-3 tracking-tight">Tomorrow's Menu</h1>
-        <p className="text-muted-foreground max-w-xs mx-auto">
-          Select at least 5 dishes you'd like to eat tomorrow to continue.
+      <div className="text-center mb-8 px-5">
+        <h1 className="font-display text-3xl sm:text-4xl font-bold mb-3 tracking-tight">
+          Tomorrow's Menu
+        </h1>
+        <p className="text-sm sm:text-base text-muted-foreground max-w-[17rem] mx-auto leading-snug">
+          Pick at least 5 dishes for tomorrow to continue.
         </p>
       </div>
 
       <button
         onClick={() => setOpen(true)}
-        className="size-52 rounded-full bg-primary text-primary-foreground shadow-2xl hover:shadow-primary/30 hover:scale-105 active:scale-95 transition-all duration-300 flex flex-col items-center justify-center gap-3"
-        style={{ animation: "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}
+        className="size-44 sm:size-52 rounded-full bg-primary text-primary-foreground shadow-2xl hover:shadow-primary/30 hover:scale-105 active:scale-95 transition-all duration-300 flex flex-col items-center justify-center gap-3"
       >
-        <ListChecks className="size-14" />
-        <span className="font-semibold text-xl">Select Dishes</span>
+        <ListChecks className="size-12 sm:size-14" />
+        <span className="font-semibold text-lg sm:text-xl">Select</span>
       </button>
 
       {/* Discreet settings bottom-right */}
@@ -322,13 +324,13 @@ function SelectionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-2xl max-h-[calc(100dvh-1rem)] flex flex-col p-4 sm:p-6">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <DialogTitle>Select Dishes for {date}</DialogTitle>
-              <DialogDescription className="mt-1">
-                Tap to select. Choose at least 5 ({selected.size} selected).
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <DialogTitle>Pick dishes</DialogTitle>
+              <DialogDescription className="mt-1 text-xs sm:text-sm">
+                5 needed / {selected.size} selected
               </DialogDescription>
             </div>
             {onAddDish && (
@@ -341,7 +343,7 @@ function SelectionDialog({
                   onAddDish();
                 }}
               >
-                <Plus className="size-4 mr-1.5" /> Add Dish
+                <Plus className="size-4 mr-1.5" /> Add
               </Button>
             )}
           </div>
@@ -407,7 +409,7 @@ function SelectionDialog({
             className="w-full sm:w-auto"
           >
             {busy ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-            Save Selections
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -765,6 +767,8 @@ function SettingsTab({ data }: { data: any }) {
       </div>
 
       <div className="space-y-4">
+        <InstallAppCard />
+
         <div className="p-4 rounded-2xl border bg-card">
           <h3 className="font-semibold mb-1">Household Invite Code</h3>
           <p className="text-xs text-muted-foreground mb-4">Share this code with family members.</p>
@@ -835,6 +839,67 @@ function SettingsTab({ data }: { data: any }) {
   );
 }
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
+function InstallAppCard() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setIsStandalone(standalone);
+
+    function onBeforeInstallPrompt(event: Event) {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    }
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+  }, []);
+
+  async function installApp() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  }
+
+  return (
+    <div className="p-4 rounded-2xl border bg-card">
+      <h3 className="font-semibold mb-1">Install Cheffy</h3>
+      <p className="text-xs text-muted-foreground mb-4">
+        Add Cheffy to your phone or computer for app-like access.
+      </p>
+      {isStandalone ? (
+        <Button variant="outline" className="w-full justify-start" disabled>
+          <CheckCircle2 className="size-4 mr-2" /> Already installed
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          className="w-full justify-start"
+          onClick={installApp}
+          disabled={!installPrompt}
+        >
+          <Download className="size-4 mr-2" /> Install app
+        </Button>
+      )}
+      {!isStandalone && !installPrompt && (
+        <p className="text-xs text-muted-foreground mt-3 leading-snug">
+          On iPhone, use Share, then Add to Home Screen. On desktop, use the browser install option
+          when it appears.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function BottomBar({
   activeTab,
   onChange,
@@ -845,54 +910,60 @@ function BottomBar({
   onAddClick: () => void;
 }) {
   const tabs = [
-    { id: "selections", icon: ListChecks, label: "Selections" },
-    { id: "dishlist", icon: Utensils, label: "Dishlist" },
+    { id: "selections", icon: ListChecks, label: "Picks" },
+    { id: "dishlist", icon: Utensils, label: "Dishes" },
   ] as const;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t bg-background/90 backdrop-blur-xl pb-safe z-50">
-      <div className="max-w-md mx-auto flex items-center justify-around p-2">
+      <div className="max-w-md mx-auto flex items-end justify-between gap-1 px-3 py-2">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
+            className={`min-w-0 flex flex-1 flex-col items-center justify-center p-2 rounded-xl transition-all ${
               activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <tab.icon className={`size-6 ${activeTab === tab.id ? "fill-primary/20" : ""}`} />
-            <span className="text-[10px] font-medium mt-1">{tab.label}</span>
+            <span className="text-[10px] font-medium mt-1 leading-none whitespace-nowrap">
+              {tab.label}
+            </span>
           </button>
         ))}
 
         <button
           onClick={() => onChange("leaderboard")}
-          className="flex flex-col items-center justify-center p-2 -mt-4"
+          className="min-w-0 flex flex-1 flex-col items-center justify-center p-1 -mt-4"
         >
           <div className="size-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
             <Trophy className="size-6" />
           </div>
-          <span className="text-[10px] font-medium mt-1 text-primary">Leaderboard</span>
+          <span className="text-[10px] font-medium mt-1 leading-none whitespace-nowrap text-primary">
+            Leaders
+          </span>
         </button>
 
         <button
           onClick={onAddClick}
-          className="flex flex-col items-center justify-center p-2 rounded-xl text-muted-foreground hover:text-foreground transition-all"
+          className="min-w-0 flex flex-1 flex-col items-center justify-center p-2 rounded-xl text-muted-foreground hover:text-foreground transition-all"
         >
           <Plus className="size-6" />
-          <span className="text-[10px] font-medium mt-1">Add</span>
+          <span className="text-[10px] font-medium mt-1 leading-none whitespace-nowrap">Add</span>
         </button>
 
         <button
           onClick={() => onChange("settings")}
-          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
+          className={`min-w-0 flex flex-1 flex-col items-center justify-center p-2 rounded-xl transition-all ${
             activeTab === "settings"
               ? "text-primary"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Settings className={`size-6 ${activeTab === "settings" ? "fill-primary/20" : ""}`} />
-          <span className="text-[10px] font-medium mt-1">Settings</span>
+          <span className="text-[10px] font-medium mt-1 leading-none whitespace-nowrap">
+            Settings
+          </span>
         </button>
       </div>
     </div>
@@ -946,6 +1017,7 @@ function AddDishDialog({
     } catch (error) {
       toast.error((error as Error).message);
     } finally {
+      e.target.value = "";
       setImageBusy(false);
     }
   }
@@ -992,12 +1064,10 @@ function AddDishDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-xl max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Add a dish</DialogTitle>
-          <DialogDescription>
-            Take a photo, name the dish, and add nutrition or recipe details.
-          </DialogDescription>
+          <DialogDescription>Add a photo, name, and optional details.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-2">
@@ -1013,20 +1083,53 @@ function AddDishDialog({
                 )}
               </div>
               <div className="space-y-2 flex flex-col justify-center">
-                <div className="relative">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={onImageChange}
-                    disabled={busy || imageBusy}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                  />
-                  <Button type="button" variant="outline" className="w-full pointer-events-none">
-                    <Camera className="size-4 mr-2" /> Choose dish picture
-                  </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="relative">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={onImageChange}
+                      disabled={busy || imageBusy}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full pointer-events-none text-sm"
+                    >
+                      <Camera className="size-4 mr-1.5" /> Camera
+                    </Button>
+                  </label>
+                  <label className="relative">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={onImageChange}
+                      disabled={busy || imageBusy}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full pointer-events-none text-sm"
+                    >
+                      <ImagePlus className="size-4 mr-1.5" /> Gallery
+                    </Button>
+                  </label>
                 </div>
-                <p className="text-xs text-muted-foreground">Photos are resized automatically.</p>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  Choose a source. Photos are resized automatically.
+                </p>
+                {dishImage && (
+                  <button
+                    type="button"
+                    onClick={() => setDishImage(null)}
+                    className="text-xs text-muted-foreground underline underline-offset-2 w-fit"
+                  >
+                    Remove photo
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1041,7 +1144,7 @@ function AddDishDialog({
             />
           </div>
           <div className="space-y-3">
-            <Label>Nutrition data (Optional)</Label>
+            <Label>Nutrition (optional)</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {NUTRITION_FIELDS.map((field) => (
                 <div key={field.key} className="space-y-1.5">
@@ -1061,7 +1164,7 @@ function AddDishDialog({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Recipe (Optional)</Label>
+            <Label>Recipe (optional)</Label>
             <Textarea
               value={recipe}
               maxLength={6000}
@@ -1071,11 +1174,11 @@ function AddDishDialog({
             />
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={busy || imageBusy}>
+            <Button type="submit" disabled={busy || imageBusy} className="w-full sm:w-auto">
               {busy ? (
                 <Loader2 className="size-4 animate-spin mr-2" />
               ) : (
-                <Camera className="size-4 mr-2" />
+                <Plus className="size-4 mr-2" />
               )}{" "}
               Add dish
             </Button>

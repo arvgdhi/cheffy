@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Cheffy">
+  <rect width="512" height="512" fill="#bd6448"/>
+  <circle cx="256" cy="256" r="220" fill="#bd6448"/>
+  <path d="M158 236c-29-8-49-31-49-63 0-41 34-74 76-74 17 0 33 5 46 15 17-28 48-46 83-46 54 0 98 43 98 95 0 33-17 62-43 80v86c0 54-45 98-101 98h-24c-56 0-101-44-101-98v-93h15Z" fill="#fff8ef"/>
+  <path d="M171 241h170v88c0 38-31 68-70 68h-30c-39 0-70-30-70-68v-88Z" fill="#fff8ef"/>
+  <path d="M202 275h108M202 319h108" fill="none" stroke="#bd6448" stroke-width="25" stroke-linecap="round"/>
+</svg>

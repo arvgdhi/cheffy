@@ -1,0 +1,33 @@
+{
+  "name": "Cheffy",
+  "short_name": "Cheffy",
+  "description": "Plan household meals, pick dishes, and prepare what your family wants.",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbf7ef",
+  "theme_color": "#bd6448",
+  "categories": ["food", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/cheffy.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/cheffy-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Cheffy",
+      "short_name": "Open",
+      "url": "/app"
+    }
+  ]
+}
