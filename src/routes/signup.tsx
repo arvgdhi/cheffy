@@ -15,29 +15,56 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
+    const { data, error } = await supabase.auth.signUp({
+      email: normalizedEmail,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/app` },
+      options: { emailRedirectTo: `${window.location.origin}/onboarding` },
     });
     setLoading(false);
     if (error) {
-      if (error.message.toLowerCase().includes("already registered") || error.message.toLowerCase().includes("already exists")) {
-        toast.error("Account already exists. Please log in.");
+      const message = error.message.toLowerCase();
+      if (message.includes("already registered") || message.includes("already exists")) {
+        toast.error("Email already exists. Please log in instead.");
         navigate({ to: "/login" });
         return;
       }
       return toast.error(error.message);
     }
-    toast.success("Account created. Let's set up your household.");
-    
-    // Wait a tick for the session to be persisted
-    await new Promise((r) => setTimeout(r, 150));
-    navigate({ to: "/onboarding" });
+
+    if (Array.isArray(data.user?.identities) && data.user.identities.length === 0) {
+      toast.error("Email already exists. Please log in instead.");
+      navigate({ to: "/login" });
+      return;
+    }
+
+    if (data.session) await supabase.auth.signOut();
+    setConfirmationEmail(normalizedEmail);
+    toast.success("Check your email for the confirmation link.");
+  }
+
+  if (confirmationEmail) {
+    return (
+      <AuthShell
+        title="Check your email"
+        subtitle={`We sent a confirmation link to ${confirmationEmail}.`}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Open the link to verify your email. After confirmation, Cheffy will take you to
+            household setup.
+          </p>
+          <Link to="/login">
+            <Button className="w-full">Go to login</Button>
+          </Link>
+        </div>
+      </AuthShell>
+    );
   }
 
   return (

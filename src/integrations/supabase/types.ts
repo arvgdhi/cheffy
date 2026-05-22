@@ -32,6 +32,53 @@ export type Database = {
         };
         Relationships: [];
       };
+      household_dishes: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          household_id: string;
+          id: string;
+          image: string | null;
+          name: string;
+          normalized_name: string;
+          nutrition: Json;
+          recipe: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          household_id: string;
+          id?: string;
+          image?: string | null;
+          name: string;
+          normalized_name: string;
+          nutrition?: Json;
+          recipe?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          household_id?: string;
+          id?: string;
+          image?: string | null;
+          name?: string;
+          normalized_name?: string;
+          nutrition?: Json;
+          recipe?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "household_dishes_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           created_at: string;
@@ -72,39 +119,46 @@ export type Database = {
           completed: boolean;
           created_at: string;
           created_by: string;
+          dish_id: string;
           dish_image: string | null;
           dish_name: string;
           household_id: string;
           id: string;
           meal_type: Database["public"]["Enums"]["meal_type"];
           scheduled_date: string;
-          spoonacular_id: number;
         };
         Insert: {
           completed?: boolean;
           created_at?: string;
           created_by: string;
+          dish_id: string;
           dish_image?: string | null;
           dish_name: string;
           household_id: string;
           id?: string;
           meal_type: Database["public"]["Enums"]["meal_type"];
           scheduled_date: string;
-          spoonacular_id: number;
         };
         Update: {
           completed?: boolean;
           created_at?: string;
           created_by?: string;
+          dish_id?: string;
           dish_image?: string | null;
           dish_name?: string;
           household_id?: string;
           id?: string;
           meal_type?: Database["public"]["Enums"]["meal_type"];
           scheduled_date?: string;
-          spoonacular_id?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "scheduled_dishes_dish_id_fkey";
+            columns: ["dish_id"];
+            isOneToOne: false;
+            referencedRelation: "household_dishes";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "scheduled_dishes_household_id_fkey";
             columns: ["household_id"];
@@ -117,38 +171,42 @@ export type Database = {
       wishlist_items: {
         Row: {
           created_at: string;
+          dish_id: string;
           dish_image: string | null;
           dish_name: string;
           household_id: string;
           id: string;
-          nutrition_score: number | null;
-          spoonacular_id: number;
           user_id: string;
           week_start: string;
         };
         Insert: {
           created_at?: string;
+          dish_id: string;
           dish_image?: string | null;
           dish_name: string;
           household_id: string;
           id?: string;
-          nutrition_score?: number | null;
-          spoonacular_id: number;
           user_id: string;
           week_start: string;
         };
         Update: {
           created_at?: string;
+          dish_id?: string;
           dish_image?: string | null;
           dish_name?: string;
           household_id?: string;
           id?: string;
-          nutrition_score?: number | null;
-          spoonacular_id?: number;
           user_id?: string;
           week_start?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "wishlist_items_dish_id_fkey";
+            columns: ["dish_id"];
+            isOneToOne: false;
+            referencedRelation: "household_dishes";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "wishlist_items_household_id_fkey";
             columns: ["household_id"];

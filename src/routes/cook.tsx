@@ -76,7 +76,7 @@ function ScheduledCard({
 }: {
   dish: {
     id: string;
-    spoonacular_id: number;
+    dish_id: string;
     dish_name: string;
     dish_image: string | null;
     scheduled_date: string;
@@ -135,21 +135,38 @@ function ScheduledCard({
         </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-1.5">
-        <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setRecipeOpen(true)}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="rounded-xl"
+          onClick={() => setRecipeOpen(true)}
+        >
           Recipe
         </Button>
         {canManage && (
           <div className="flex gap-1.5 ml-auto sm:ml-0">
-            <Button size="icon" variant="outline" className="rounded-xl hover:bg-primary/10 hover:text-primary transition-colors" onClick={toggle} title="Toggle done">
+            <Button
+              size="icon"
+              variant="outline"
+              className="rounded-xl hover:bg-primary/10 hover:text-primary transition-colors"
+              onClick={toggle}
+              title="Toggle done"
+            >
               <Check className="size-4" />
             </Button>
-            <Button size="icon" variant="outline" className="rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={remove} title="Remove">
+            <Button
+              size="icon"
+              variant="outline"
+              className="rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors"
+              onClick={remove}
+              title="Remove"
+            >
               <Trash2 className="size-4 text-muted-foreground hover:text-destructive transition-colors" />
             </Button>
           </div>
         )}
       </div>
-      <DishDetailsDialog dishId={dish.spoonacular_id} open={recipeOpen} onOpenChange={setRecipeOpen} />
+      <DishDetailsDialog dishId={dish.dish_id} open={recipeOpen} onOpenChange={setRecipeOpen} />
     </div>
   );
 }

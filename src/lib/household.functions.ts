@@ -22,7 +22,12 @@ export const getMyProfile = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
 
-    let household = null as null | { id: string; name: string; invite_code: string; created_by: string };
+    let household = null as null | {
+      id: string;
+      name: string;
+      invite_code: string;
+      created_by: string;
+    };
     if (profile?.household_id) {
       const { data: h } = await supabase
         .from("households")
@@ -67,14 +72,12 @@ export const createHousehold = createServerFn({ method: "POST" })
       .single();
     if (hErr) throw new Error(hErr.message);
 
-    const { error: pErr } = await supabase
-      .from("profiles")
-      .upsert({
-        id: userId,
-        display_name: data.displayName,
-        household_id: household.id,
-        role: data.role,
-      });
+    const { error: pErr } = await supabase.from("profiles").upsert({
+      id: userId,
+      display_name: data.displayName,
+      household_id: household.id,
+      role: data.role,
+    });
     if (pErr) throw new Error(pErr.message);
 
     return { household };
@@ -101,14 +104,12 @@ export const joinHousehold = createServerFn({ method: "POST" })
     if (hErr) throw new Error(hErr.message);
     if (!h) throw new Error("Invite code not found");
 
-    const { error: pErr } = await supabase
-      .from("profiles")
-      .upsert({
-        id: userId,
-        display_name: data.displayName,
-        household_id: h.id,
-        role: data.role,
-      });
+    const { error: pErr } = await supabase.from("profiles").upsert({
+      id: userId,
+      display_name: data.displayName,
+      household_id: h.id,
+      role: data.role,
+    });
     if (pErr) throw new Error(pErr.message);
 
     return { household: h };
@@ -143,8 +144,9 @@ export const regenerateInviteCode = createServerFn({ method: "POST" })
       .select("created_by")
       .eq("id", profile.household_id)
       .maybeSingle();
-    
-    if (h?.created_by !== userId) throw new Error("Only the creator can regenerate the invite code.");
+
+    if (h?.created_by !== userId)
+      throw new Error("Only the creator can regenerate the invite code.");
 
     let inviteCode = generateInviteCode();
     for (let i = 0; i < 5; i++) {

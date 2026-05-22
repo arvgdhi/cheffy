@@ -43,7 +43,8 @@ function Onboarding() {
       navigate({ to: "/login" });
       return;
     }
-    fetchProfileRef.current()
+    fetchProfileRef
+      .current()
       .then((r) => {
         if (r.profile?.household_id) navigate({ to: "/app" });
       })

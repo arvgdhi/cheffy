@@ -22,10 +22,14 @@ function Landing() {
         </Link>
         <div className="flex gap-3">
           <Link to="/login">
-            <Button variant="ghost" className="font-medium hover:bg-muted/50 rounded-xl">Log in</Button>
+            <Button variant="ghost" className="font-medium hover:bg-muted/50 rounded-xl">
+              Log in
+            </Button>
           </Link>
           <Link to="/signup">
-            <Button className="rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow">Sign up</Button>
+            <Button className="rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow">
+              Sign up
+            </Button>
           </Link>
         </div>
       </header>
@@ -35,27 +39,34 @@ function Landing() {
           <HeartPulse className="size-4" />
           <span>The new way to plan family meals</span>
         </div>
-        
+
         <h1 className="font-display text-5xl md:text-7xl font-semibold leading-[1.1] tracking-tight animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150">
           What's for dinner?
           <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/60 mt-2 pb-2">
             The family decides.
           </span>
         </h1>
-        
+
         <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300 leading-relaxed">
-          Cheffy turns mealtime negotiation into a friendly leaderboard. Everyone wishlists
-          dishes, the most-wanted rises to the top, and the cook picks what to make.
+          Cheffy turns mealtime negotiation into a friendly leaderboard. Everyone wishlists dishes,
+          the most-wanted rises to the top, and the cook picks what to make.
         </p>
-        
+
         <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-in fade-in slide-in-from-bottom-6 duration-700 delay-500">
           <Link to="/signup" className="w-full sm:w-auto">
-            <Button size="lg" className="w-full sm:w-auto rounded-xl text-base h-12 px-8 shadow-xl shadow-primary/25 hover:scale-105 transition-all">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto rounded-xl text-base h-12 px-8 shadow-xl shadow-primary/25 hover:scale-105 transition-all"
+            >
               Get started for free
             </Button>
           </Link>
           <Link to="/login" className="w-full sm:w-auto">
-            <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-xl text-base h-12 px-8 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-muted/50 hover:scale-105 transition-all">
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full sm:w-auto rounded-xl text-base h-12 px-8 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-muted/50 hover:scale-105 transition-all"
+            >
               I have an account
             </Button>
           </Link>
@@ -65,7 +76,7 @@ function Landing() {
           <FeatureCard
             icon={<Utensils className="size-6" />}
             title="Wishlist any dish"
-            body="Search a massive recipe library and add what you're craving in seconds."
+            body="Snap a dish photo, add its name, and keep optional nutrition or recipe notes."
           />
           <FeatureCard
             icon={<Trophy className="size-6" />}

@@ -20,14 +20,26 @@ function LoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", data.user.id)
+      .maybeSingle();
+
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (profileError) return toast.error(profileError.message);
+
     toast.success("Welcome back!");
-    // Wait a tick for the session to be persisted to localStorage
-    // before navigating, so /app sees the session immediately
-    await new Promise((r) => setTimeout(r, 150));
-    navigate({ to: "/app" });
+    navigate({ to: profile?.household_id ? "/app" : "/onboarding" });
   }
 
   return (

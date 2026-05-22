@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getMyProfile, regenerateInviteCode } from "@/lib/household.functions";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export type ProfileData = Awaited<ReturnType<typeof getMyProfile>>;
@@ -31,7 +38,8 @@ export function useEnsureHousehold() {
     if (didRun.current) return;
     didRun.current = true;
 
-    fetchProfileRef.current()
+    fetchProfileRef
+      .current()
       .then((r) => {
         if (!r.profile?.household_id) {
           navigate({ to: "/onboarding" });
@@ -74,7 +82,12 @@ export function AppHeader({ data }: { data: ProfileData }) {
         </Link>
         <div className="flex items-center gap-2">
           {data.household && (
-            <Button variant="outline" size="sm" onClick={() => setInviteOpen(true)} className="hidden sm:flex hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-colors">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setInviteOpen(true)}
+              className="hidden sm:flex hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-colors"
+            >
               <UserPlus className="size-4 mr-1.5" />
               Invite
             </Button>
@@ -92,7 +105,7 @@ export function AppHeader({ data }: { data: ProfileData }) {
           </Button>
         </div>
       </div>
-      
+
       {data.household && (
         <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
           <DialogContent className="sm:max-w-md">
@@ -108,10 +121,10 @@ export function AppHeader({ data }: { data: ProfileData }) {
                   {localInviteCode}
                 </div>
               </div>
-              <Button 
-                type="submit" 
-                size="icon" 
-                className="h-12 w-12 shrink-0" 
+              <Button
+                type="submit"
+                size="icon"
+                className="h-12 w-12 shrink-0"
                 onClick={() => {
                   navigator.clipboard.writeText(localInviteCode ?? "");
                   toast.success("Invite code copied!");
@@ -122,10 +135,10 @@ export function AppHeader({ data }: { data: ProfileData }) {
             </div>
             {isCreator && (
               <DialogFooter className="sm:justify-start mt-6 border-t pt-4">
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
                   className="text-muted-foreground hover:text-foreground"
                   disabled={regenBusy}
                   onClick={async () => {

@@ -1,11 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Utensils, Trophy, Search, Trash2, CalendarPlus, Loader2 } from "lucide-react";
+import {
+  Camera,
+  CalendarPlus,
+  ImagePlus,
+  Loader2,
+  Plus,
+  Trash2,
+  Trophy,
+  Utensils,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -25,13 +35,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { useEnsureHousehold, AppHeader } from "@/components/app-shell";
 import { DishDetailsDialog } from "@/components/dish-details-dialog";
-import { searchDishes, type SearchResult } from "@/lib/spoonacular.functions";
 import {
-  addToWishlist,
-  getWishlist,
-  getLeaderboard,
-  removeFromWishlist,
-} from "@/lib/wishlist.functions";
+  addDishToWishlist,
+  NUTRITION_FIELDS,
+  type DishNutrition,
+  type NutritionKey,
+} from "@/lib/dish.functions";
+import { getWishlist, getLeaderboard, removeFromWishlist } from "@/lib/wishlist.functions";
 import { scheduleDish } from "@/lib/schedule.functions";
 
 export const Route = createFileRoute("/app")({
@@ -76,18 +86,17 @@ function AppPage() {
   );
 }
 
-// ---------- Wishlist ----------
 function WishlistSection() {
   const fetchWishlist = useServerFn(getWishlist);
   const { data, isLoading } = useQuery({ queryKey: ["wishlist"], queryFn: () => fetchWishlist() });
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [detailsId, setDetailsId] = useState<number | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   return (
     <section>
       <SectionHeader
         title="Your Wishlist"
-        subtitle="Tap + to add a dish you're craving. Resets every Saturday."
+        subtitle="Tap + to add a dish photo, name, and any recipe notes. Resets every Saturday."
       />
       <div className="mt-6 relative min-h-[50vh]">
         {isLoading ? (
@@ -99,20 +108,25 @@ function WishlistSection() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {data.items.map((item) => (
-              <WishlistCard key={item.id} item={item} onClick={() => setDetailsId(item.spoonacular_id)} />
+              <WishlistCard key={item.id} item={item} onClick={() => setDetailsId(item.dish_id)} />
             ))}
           </div>
         )}
       </div>
       <Button
-        onClick={() => setSearchOpen(true)}
+        onClick={() => setAddOpen(true)}
         className="fixed bottom-6 right-6 size-14 rounded-full shadow-lg"
         size="icon"
+        aria-label="Add dish"
       >
         <Plus className="size-6" />
       </Button>
-      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
-      <DishDetailsDialog dishId={detailsId} open={detailsId !== null} onOpenChange={(o) => !o && setDetailsId(null)} />
+      <AddDishDialog open={addOpen} onOpenChange={setAddOpen} />
+      <DishDetailsDialog
+        dishId={detailsId}
+        open={detailsId !== null}
+        onOpenChange={(open) => !open && setDetailsId(null)}
+      />
     </section>
   );
 }
@@ -123,8 +137,12 @@ function EmptyWishlist() {
       <div className="size-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 border border-border/50">
         <Utensils className="size-8 text-muted-foreground/50" />
       </div>
-      <p className="text-muted-foreground font-medium text-lg tracking-tight">Your wishlist is empty</p>
-      <p className="text-sm text-muted-foreground mt-1 max-w-[200px]">Tap the + button to search and add a dish.</p>
+      <p className="text-muted-foreground font-medium text-lg tracking-tight">
+        Your wishlist is empty
+      </p>
+      <p className="text-sm text-muted-foreground mt-1 max-w-[220px]">
+        Tap the + button to add a dish from your own kitchen.
+      </p>
     </div>
   );
 }
@@ -135,10 +153,10 @@ function WishlistCard({
 }: {
   item: {
     id: string;
-    spoonacular_id: number;
+    dish_id: string;
     dish_name: string;
     dish_image: string | null;
-    nutrition_score: number | null;
+    nutrition: DishNutrition;
   };
   onClick: () => void;
 }) {
@@ -155,30 +173,33 @@ function WishlistCard({
     }
   }
   return (
-    <div 
+    <div
       className="group relative rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden hover:shadow-md hover:border-primary/20 transition-all duration-300 cursor-pointer"
       onClick={onClick}
     >
-      <div className="aspect-square bg-muted overflow-hidden">
-        {item.dish_image && (
+      <div className="aspect-square bg-muted overflow-hidden flex items-center justify-center">
+        {item.dish_image ? (
           <img
             src={item.dish_image}
             alt={item.dish_name}
             className="w-full h-full object-cover"
             loading="lazy"
           />
+        ) : (
+          <Utensils className="size-10 text-muted-foreground/40" />
         )}
       </div>
       <div className="p-3">
         <h3 className="font-semibold text-sm line-clamp-2">{item.dish_name}</h3>
-        <div className="mt-2 flex items-center gap-1.5">
-          <NutritionPie score={item.nutrition_score ?? 0} />
-          <span className="text-xs text-muted-foreground">{item.nutrition_score ?? 0}/100</span>
-        </div>
+        <NutritionSummary nutrition={item.nutrition} />
       </div>
       <button
-        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
         className="absolute top-2 right-2 size-8 rounded-full bg-background/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-background transition-all shadow-sm cursor-pointer"
+        aria-label={`Remove ${item.dish_name}`}
       >
         <Trash2 className="size-3.5 text-destructive" />
       </button>
@@ -186,161 +207,285 @@ function WishlistCard({
   );
 }
 
-function NutritionPie({ score }: { score: number }) {
-  const clamped = Math.max(0, Math.min(100, score));
-  const angle = (clamped / 100) * 360;
-  const color =
-    clamped >= 70
-      ? "var(--color-accent)"
-      : clamped >= 40
-        ? "var(--color-chart-3)"
-        : "var(--color-destructive)";
+function NutritionSummary({ nutrition }: { nutrition: DishNutrition }) {
+  if (nutritionEntries(nutrition).length === 0) return null;
+  return (
+    <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+      <NutritionPie nutrition={nutrition} />
+      <span>Nutrition mix</span>
+    </div>
+  );
+}
+
+function NutritionPie({ nutrition }: { nutrition: DishNutrition }) {
+  const entries = nutritionEntries(nutrition);
+  const total = entries.reduce((sum, entry) => sum + entry.value, 0);
+  if (total <= 0) return null;
+
+  let cursor = 0;
+  const stops = entries.map((entry) => {
+    const start = cursor;
+    cursor += (entry.value / total) * 360;
+    return `${entry.color} ${start}deg ${cursor}deg`;
+  });
+
   return (
     <div
-      className="size-5 rounded-full"
-      style={{ background: `conic-gradient(${color} ${angle}deg, var(--color-muted) 0)` }}
+      className="size-5 rounded-full border border-background/80 shadow-sm"
+      style={{ background: `conic-gradient(${stops.join(", ")})` }}
     />
   );
 }
 
-// ---------- Search Dialog ----------
-function SearchDialog({
+function nutritionEntries(nutrition: DishNutrition) {
+  return NUTRITION_FIELDS.map((field) => ({
+    ...field,
+    value: nutrition[field.key] ?? 0,
+  })).filter((entry) => entry.value > 0);
+}
+
+const EMPTY_NUTRITION: Record<NutritionKey, string> = {
+  protein: "",
+  fat: "",
+  carbohydrates: "",
+  fiber: "",
+  vitamins: "",
+  minerals: "",
+};
+
+function AddDishDialog({
   open,
   onOpenChange,
 }: {
   open: boolean;
-  onOpenChange: (b: boolean) => void;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const search = useServerFn(searchDishes);
-  const addFn = useServerFn(addToWishlist);
+  const addDish = useServerFn(addDishToWishlist);
   const qc = useQueryClient();
-  const [q, setQ] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [adding, setAdding] = useState<number | null>(null);
+  const [dishName, setDishName] = useState("");
+  const [dishImage, setDishImage] = useState<string | null>(null);
+  const [nutrition, setNutrition] = useState<Record<NutritionKey, string>>({
+    ...EMPTY_NUTRITION,
+  });
+  const [recipe, setRecipe] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
 
   useEffect(() => {
     if (!open) {
-      setQ("");
-      setResults([]);
+      setDishName("");
+      setDishImage(null);
+      setNutrition({ ...EMPTY_NUTRITION });
+      setRecipe("");
+      setBusy(false);
+      setImageBusy(false);
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!q.trim()) {
-      setResults([]);
+  async function onImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageBusy(true);
+    try {
+      setDishImage(await resizeImage(file));
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setImageBusy(false);
+    }
+  }
+
+  function buildNutrition(): DishNutrition | null {
+    const out: DishNutrition = {};
+    for (const field of NUTRITION_FIELDS) {
+      const raw = nutrition[field.key].trim();
+      if (!raw) continue;
+      const value = Number(raw);
+      if (Number.isFinite(value) && value > 0) out[field.key] = value;
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const name = dishName.trim();
+    if (!name) return;
+    if (!dishImage) {
+      toast.error("Add a photo of the dish first.");
       return;
     }
-    const t = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const r = await search({ data: { query: q.trim() } });
-        if (r.error) toast.error(r.error);
-        setResults(r.results);
-      } catch (e) {
-        toast.error((e as Error).message);
-      } finally {
-        setSearching(false);
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [q, search]);
 
-  async function onPick(r: SearchResult) {
-    setAdding(r.id);
+    setBusy(true);
     try {
-      await addFn({
+      await addDish({
         data: {
-          spoonacularId: r.id,
-          dishName: r.title,
-          dishImage: r.image ?? null,
-          nutritionScore: r.nutritionScore,
+          dishName: name,
+          dishImage,
+          nutrition: buildNutrition(),
+          recipe: recipe.trim() || null,
         },
       });
       qc.invalidateQueries({ queryKey: ["wishlist"] });
       qc.invalidateQueries({ queryKey: ["leaderboard"] });
-      toast.success(`Added ${r.title}`);
+      toast.success(`Added ${name}`);
       onOpenChange(false);
-    } catch (e) {
-      toast.error((e as Error).message);
+    } catch (error) {
+      toast.error((error as Error).message);
     } finally {
-      setAdding(null);
+      setBusy(false);
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Find a dish</DialogTitle>
+          <DialogTitle>Add a dish</DialogTitle>
           <DialogDescription>
-            Search the Spoonacular library and add it to your wishlist.
+            Take a photo, name the dish, and add nutrition or recipe details if you have them.
           </DialogDescription>
         </DialogHeader>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            autoFocus
-            className="pl-9"
-            placeholder="e.g. pasta, dosa, ramen…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-        <div className="max-h-[50vh] overflow-y-auto -mx-2">
-          {searching && (
-            <div className="py-8 flex justify-center">
-              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label>Dish photo</Label>
+            <div className="grid sm:grid-cols-[160px_1fr] gap-3">
+              <div className="aspect-square rounded-xl bg-muted border border-border/60 overflow-hidden flex items-center justify-center">
+                {dishImage ? (
+                  <img src={dishImage} alt="Dish preview" className="h-full w-full object-cover" />
+                ) : imageBusy ? (
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                ) : (
+                  <ImagePlus className="size-8 text-muted-foreground/50" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={onImageChange}
+                  disabled={busy || imageBusy}
+                />
+                <p className="text-xs text-muted-foreground">
+                  On a phone, this opens the camera. Photos are resized before saving.
+                </p>
+              </div>
             </div>
-          )}
-          {!searching && results.length === 0 && q && (
-            <p className="text-center text-sm text-muted-foreground py-8">No dishes found.</p>
-          )}
-          {!searching && !q && (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              Start typing to search.
-            </p>
-          )}
-          <ul>
-            {results.map((r) => (
-              <li key={r.id}>
-                <button
-                  disabled={adding !== null}
-                  onClick={() => onPick(r)}
-                  className="w-full flex items-center gap-3 p-2 hover:bg-muted rounded-xl text-left transition disabled:opacity-50"
-                >
-                  <div className="size-12 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                    {r.image && (
-                      <img src={r.image} alt={r.title} className="w-full h-full object-cover" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm line-clamp-1">{r.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Nutrition {r.nutritionScore}/100
-                    </p>
-                  </div>
-                  {adding === r.id && <Loader2 className="size-4 animate-spin" />}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="dish-name">Dish name</Label>
+            <Input
+              id="dish-name"
+              required
+              maxLength={200}
+              value={dishName}
+              onChange={(e) => setDishName(e.target.value)}
+              placeholder="e.g. paneer tikka, ramen, pasta bake"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <Label>Nutrition data</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Optional estimates for the pie chart.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {NUTRITION_FIELDS.map((field) => (
+                <div key={field.key} className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">
+                    {field.label} ({field.unit})
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputMode="decimal"
+                    value={nutrition[field.key]}
+                    onChange={(e) =>
+                      setNutrition((current) => ({
+                        ...current,
+                        [field.key]: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="dish-recipe">Recipe</Label>
+            <Textarea
+              id="dish-recipe"
+              value={recipe}
+              maxLength={6000}
+              onChange={(e) => setRecipe(e.target.value)}
+              placeholder="Ingredients, instructions, family notes..."
+              className="min-h-32"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="submit" disabled={busy || imageBusy}>
+              {busy ? (
+                <Loader2 className="size-4 mr-1.5 animate-spin" />
+              ) : (
+                <Camera className="size-4 mr-1.5" />
+              )}
+              Add dish
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
 }
 
-// ---------- Leaderboard ----------
+function resizeImage(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("Choose an image file."));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read the image."));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("Could not load the image."));
+      image.onload = () => {
+        const maxSide = 900;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Could not prepare the image."));
+          return;
+        }
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function LeaderboardSection({ isCook }: { isCook: boolean }) {
   const fetchLb = useServerFn(getLeaderboard);
   const { data, isLoading } = useQuery({ queryKey: ["leaderboard"], queryFn: () => fetchLb() });
   const [scheduleFor, setScheduleFor] = useState<null | {
-    spoonacularId: number;
+    dishId: string;
     dishName: string;
     dishImage: string | null;
   }>(null);
-  const [detailsId, setDetailsId] = useState<number | null>(null);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   return (
     <section>
@@ -360,38 +505,43 @@ function LeaderboardSection({ isCook }: { isCook: boolean }) {
           </div>
         ) : (
           <ol className="space-y-2">
-            {data.leaderboard.map((d, i) => (
-              <li key={d.spoonacularId}>
+            {data.leaderboard.map((dish, index) => (
+              <li key={dish.dishId}>
                 <div
-                  onClick={() => setDetailsId(d.spoonacularId)}
+                  onClick={() => setDetailsId(dish.dishId)}
                   className="group w-full flex items-center gap-3 p-3 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm hover:bg-muted/50 hover:shadow-sm transition-all duration-200 text-left cursor-pointer"
                 >
                   <span
-                    className={`size-9 rounded-full flex items-center justify-center font-display font-semibold ${i === 0 ? "bg-primary text-primary-foreground" : i < 3 ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}
+                    className={`size-9 rounded-full flex items-center justify-center font-display font-semibold ${index === 0 ? "bg-primary text-primary-foreground" : index < 3 ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}
                   >
-                    {i + 1}
+                    {index + 1}
                   </span>
-                  <div className="size-12 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                    {d.dishImage && (
+                  <div className="size-12 rounded-lg bg-muted overflow-hidden flex-shrink-0 flex items-center justify-center">
+                    {dish.dishImage ? (
                       <img
-                        src={d.dishImage}
-                        alt={d.dishName}
+                        src={dish.dishImage}
+                        alt={dish.dishName}
                         className="w-full h-full object-cover"
                       />
+                    ) : (
+                      <Utensils className="size-6 text-muted-foreground/40" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold line-clamp-1">{d.dishName}</p>
+                    <p className="font-semibold line-clamp-1">{dish.dishName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {d.votes} {d.votes === 1 ? "wish" : "wishes"}
+                      {dish.votes} {dish.votes === 1 ? "wish" : "wishes"}
                     </p>
                   </div>
                   {isCook && (
-                    <Button 
-                      size="sm" 
-                      variant="secondary" 
+                    <Button
+                      size="sm"
+                      variant="secondary"
                       className="ml-auto shrink-0"
-                      onClick={(e) => { e.stopPropagation(); setScheduleFor(d); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setScheduleFor(dish);
+                      }}
                     >
                       <CalendarPlus className="size-4 mr-1.5 hidden sm:inline" />
                       <span className="hidden sm:inline">Schedule</span>
@@ -405,7 +555,11 @@ function LeaderboardSection({ isCook }: { isCook: boolean }) {
         )}
       </div>
       <ScheduleDialog dish={scheduleFor} onClose={() => setScheduleFor(null)} />
-      <DishDetailsDialog dishId={detailsId} open={detailsId !== null} onOpenChange={(o) => !o && setDetailsId(null)} />
+      <DishDetailsDialog
+        dishId={detailsId}
+        open={detailsId !== null}
+        onOpenChange={(open) => !open && setDetailsId(null)}
+      />
     </section>
   );
 }
@@ -414,7 +568,7 @@ function ScheduleDialog({
   dish,
   onClose,
 }: {
-  dish: null | { spoonacularId: number; dishName: string; dishImage: string | null };
+  dish: null | { dishId: string; dishName: string; dishImage: string | null };
   onClose: () => void;
 }) {
   const scheduleFn = useServerFn(scheduleDish);
@@ -435,7 +589,7 @@ function ScheduleDialog({
     try {
       await scheduleFn({
         data: {
-          spoonacularId: dish.spoonacularId,
+          dishId: dish.dishId,
           dishName: dish.dishName,
           dishImage: dish.dishImage,
           date,
@@ -453,7 +607,7 @@ function ScheduleDialog({
   }
 
   return (
-    <Dialog open={!!dish} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={!!dish} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Schedule {dish?.dishName}</DialogTitle>
@@ -468,7 +622,7 @@ function ScheduleDialog({
             <Label>Meal</Label>
             <Select
               value={meal}
-              onValueChange={(v) => setMeal(v as "breakfast" | "lunch" | "dinner")}
+              onValueChange={(value) => setMeal(value as "breakfast" | "lunch" | "dinner")}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -483,7 +637,7 @@ function ScheduleDialog({
         </div>
         <DialogFooter>
           <Button onClick={submit} disabled={busy}>
-            {busy ? "Saving…" : "Schedule dish"}
+            {busy ? "Saving..." : "Schedule dish"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -491,7 +645,6 @@ function ScheduleDialog({
   );
 }
 
-// ---------- Shared ----------
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="px-1">

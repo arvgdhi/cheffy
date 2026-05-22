@@ -9,9 +9,9 @@ export const scheduleDish = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
-        spoonacularId: z.number().int().positive(),
+        dishId: z.string().uuid(),
         dishName: z.string().min(1).max(200),
-        dishImage: z.string().url().nullable(),
+        dishImage: z.string().nullable(),
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         mealType: MealEnum,
       })
@@ -30,7 +30,7 @@ export const scheduleDish = createServerFn({ method: "POST" })
     }
     const { error } = await supabase.from("scheduled_dishes").insert({
       household_id: profile.household_id,
-      spoonacular_id: data.spoonacularId,
+      dish_id: data.dishId,
       dish_name: data.dishName,
       dish_image: data.dishImage,
       scheduled_date: data.date,
@@ -47,7 +47,7 @@ export const getScheduledDishes = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data, error } = await supabase
       .from("scheduled_dishes")
-      .select("id, spoonacular_id, dish_name, dish_image, scheduled_date, meal_type, completed")
+      .select("id, dish_id, dish_name, dish_image, scheduled_date, meal_type, completed")
       .order("scheduled_date", { ascending: true })
       .order("meal_type", { ascending: true });
     if (error) throw new Error(error.message);
