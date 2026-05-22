@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate, Link, useRouter } from "@tanstack/react-router";
-import { ChefHat, LogOut, BookOpen, UserPlus, Copy, RefreshCw } from "lucide-react";
+import { ChefHat, LogOut, BookOpen, UserPlus, Copy, RefreshCw, Settings, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { getMyProfile, regenerateInviteCode } from "@/lib/household.functions";
+import { getMyProfile, regenerateInviteCode, leaveHousehold } from "@/lib/household.functions";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 export type ProfileData = Awaited<ReturnType<typeof getMyProfile>>;
@@ -65,6 +72,7 @@ export function AppHeader({ data }: { data: ProfileData }) {
   const isCook = data.profile?.role === "cook" || data.profile?.role === "both";
   const isCreator = data.profile?.id === data.household?.created_by;
   const regenFn = useServerFn(regenerateInviteCode);
+  const leaveFn = useServerFn(leaveHousehold);
   const [regenBusy, setRegenBusy] = useState(false);
 
   async function signOut() {
@@ -100,9 +108,32 @@ export function AppHeader({ data }: { data: ProfileData }) {
               </Button>
             </Link>
           )}
-          <Button variant="ghost" size="icon" onClick={signOut}>
-            <LogOut className="size-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Settings className="size-4 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  await leaveFn();
+                  toast.success("Left household");
+                  router.navigate({ to: "/onboarding" });
+                } catch (e) {
+                  toast.error((e as Error).message);
+                }
+              }} className="text-destructive focus:text-destructive cursor-pointer">
+                <DoorOpen className="size-4 mr-2" />
+                Leave Household
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={signOut} className="cursor-pointer">
+                <LogOut className="size-4 mr-2" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

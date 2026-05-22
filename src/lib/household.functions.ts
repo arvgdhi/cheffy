@@ -169,3 +169,16 @@ export const regenerateInviteCode = createServerFn({ method: "POST" })
 
     return { household: newH };
   });
+
+export const leaveHousehold = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ household_id: null, role: null })
+      .eq("id", userId);
+    
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

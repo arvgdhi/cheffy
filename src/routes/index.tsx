@@ -1,4 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import { ChefHat, Utensils, Trophy, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -7,6 +9,15 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate({ to: "/app", replace: true });
+    }
+  }, [user, loading, navigate]);
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       {/* Background gradients */}

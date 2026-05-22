@@ -17,7 +17,7 @@ export const Route = createFileRoute("/cook")({
 function CookPage() {
   const { data, ready } = useEnsureHousehold();
   const fetchScheduled = useServerFn(getScheduledDishes);
-  const { data: sched, isLoading } = useQuery({
+  const { data: sched, isLoading, isError, error } = useQuery({
     queryKey: ["scheduled"],
     queryFn: () => fetchScheduled(),
     enabled: ready,
@@ -54,6 +54,10 @@ function CookPage() {
           {isLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : isError ? (
+            <div className="text-center py-12 text-destructive">
+              <p>Error loading schedule: {(error as Error).message}</p>
             </div>
           ) : !sched || sched.items.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">

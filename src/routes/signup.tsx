@@ -43,7 +43,12 @@ function SignupPage() {
       return;
     }
 
-    if (data.session) await supabase.auth.signOut();
+    if (data.session) {
+      toast.success("Account created!");
+      await new Promise((r) => setTimeout(r, 150));
+      navigate({ to: "/onboarding" });
+      return;
+    }
     setConfirmationEmail(normalizedEmail);
     toast.success("Check your email for the confirmation link.");
   }

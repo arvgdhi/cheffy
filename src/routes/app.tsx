@@ -88,7 +88,7 @@ function AppPage() {
 
 function WishlistSection() {
   const fetchWishlist = useServerFn(getWishlist);
-  const { data, isLoading } = useQuery({ queryKey: ["wishlist"], queryFn: () => fetchWishlist() });
+  const { data, isLoading, isError, error } = useQuery({ queryKey: ["wishlist"], queryFn: () => fetchWishlist() });
   const [addOpen, setAddOpen] = useState(false);
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
@@ -102,6 +102,11 @@ function WishlistSection() {
         {isLoading ? (
           <div className="flex justify-center pt-12">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : isError ? (
+          <div className="text-center py-12 text-destructive">
+            <p>Error loading wishlist: {(error as Error).message}</p>
+            <p className="text-sm mt-1">Make sure you have run the database migrations.</p>
           </div>
         ) : !data || data.items.length === 0 ? (
           <EmptyWishlist />
@@ -479,7 +484,7 @@ function resizeImage(file: File) {
 
 function LeaderboardSection({ isCook }: { isCook: boolean }) {
   const fetchLb = useServerFn(getLeaderboard);
-  const { data, isLoading } = useQuery({ queryKey: ["leaderboard"], queryFn: () => fetchLb() });
+  const { data, isLoading, isError, error } = useQuery({ queryKey: ["leaderboard"], queryFn: () => fetchLb() });
   const [scheduleFor, setScheduleFor] = useState<null | {
     dishId: string;
     dishName: string;
@@ -497,6 +502,10 @@ function LeaderboardSection({ isCook }: { isCook: boolean }) {
         {isLoading ? (
           <div className="flex justify-center pt-8">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : isError ? (
+          <div className="text-center py-12 text-destructive">
+            <p>Error loading leaderboard: {(error as Error).message}</p>
           </div>
         ) : !data || data.leaderboard.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
