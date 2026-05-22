@@ -18,7 +18,7 @@ import {
   RefreshCw,
   UserPlus,
   CheckCircle2,
-  Circle
+  Circle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,9 +42,19 @@ import {
 import { Label } from "@/components/ui/label";
 import { useEnsureHousehold } from "@/components/app-shell";
 import { DishDetailsDialog } from "@/components/dish-details-dialog";
-import { addDishToWishlist, NUTRITION_FIELDS, type DishNutrition, type NutritionKey } from "@/lib/dish.functions";
+import {
+  addDishToWishlist,
+  NUTRITION_FIELDS,
+  type DishNutrition,
+  type NutritionKey,
+} from "@/lib/dish.functions";
 import { scheduleDish } from "@/lib/schedule.functions";
-import { getMySelections, saveSelections, getDailyLeaderboard, getHouseholdDishlist } from "@/lib/selections.functions";
+import {
+  getMySelections,
+  saveSelections,
+  getDailyLeaderboard,
+  getHouseholdDishlist,
+} from "@/lib/selections.functions";
 import { regenerateInviteCode, leaveHousehold } from "@/lib/household.functions";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -68,17 +78,17 @@ function AppPage() {
   const [bypassForceToSettings, setBypassForceToSettings] = useState(false);
 
   const fetchSelections = useServerFn(getMySelections);
-  
+
   const tomorrowStr = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
     return getLocalDateString(d);
   }, []);
 
-  const { data: tomorrowSelections, isLoading } = useQuery({ 
-    queryKey: ["selections", tomorrowStr], 
+  const { data: tomorrowSelections, isLoading } = useQuery({
+    queryKey: ["selections", tomorrowStr],
     queryFn: () => fetchSelections({ data: { date: tomorrowStr } }),
-    enabled: ready
+    enabled: ready,
   });
 
   if (!ready || !data) {
@@ -97,7 +107,8 @@ function AppPage() {
     );
   }
 
-  const isForced = (!tomorrowSelections || tomorrowSelections.selections.length < 5) && !bypassForceToSettings;
+  const isForced =
+    (!tomorrowSelections || tomorrowSelections.selections.length < 5) && !bypassForceToSettings;
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
@@ -113,7 +124,9 @@ function AppPage() {
               <span className="font-display font-semibold tracking-tight text-base">Cheffy</span>
             </div>
             {bypassForceToSettings && (
-               <Button variant="ghost" size="sm" onClick={() => setBypassForceToSettings(false)}>Back to Selections</Button>
+              <Button variant="ghost" size="sm" onClick={() => setBypassForceToSettings(false)}>
+                Back to Selections
+              </Button>
             )}
           </div>
         </header>
@@ -122,7 +135,7 @@ function AppPage() {
       {isForced ? (
         <SelectionForceScreen
           date={tomorrowStr}
-          initialSelections={tomorrowSelections?.selections?.map(s => s.dish_id) ?? []}
+          initialSelections={tomorrowSelections?.selections?.map((s) => s.dish_id) ?? []}
           onSettingsClick={() => setBypassForceToSettings(true)}
           onAddDish={() => setAddOpen(true)}
         />
@@ -132,7 +145,11 @@ function AppPage() {
             <div className="page-transition-enter">
               {activeTab === "selections" && <SelectionsTab />}
               {activeTab === "dishlist" && <DishlistTab />}
-              {activeTab === "leaderboard" && <LeaderboardTab isCook={data.profile?.role === "cook" || data.profile?.role === "both"} />}
+              {activeTab === "leaderboard" && (
+                <LeaderboardTab
+                  isCook={data.profile?.role === "cook" || data.profile?.role === "both"}
+                />
+              )}
               {activeTab === "settings" && <SettingsTab data={data} />}
             </div>
           </div>
@@ -140,33 +157,55 @@ function AppPage() {
       )}
 
       {!isForced && (
-        <BottomBar activeTab={activeTab} onChange={setActiveTab} onAddClick={() => setAddOpen(true)} />
+        <BottomBar
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          onAddClick={() => setAddOpen(true)}
+        />
       )}
 
-      <AddDishDialog open={addOpen} onOpenChange={setAddOpen} onSuccess={() => setActiveTab("dishlist")} />
+      <AddDishDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onSuccess={() => setActiveTab("dishlist")}
+      />
     </div>
   );
 }
 
 function FloatingIconsBackground() {
-  const icons = [
-    { Icon: Utensils, size: "size-10", color: "text-primary", delay: "0s", anim: "animate-float-1", left: "8%" },
-    { Icon: Camera, size: "size-8", color: "text-accent", delay: "1.5s", anim: "animate-float-2", left: "22%" },
-    { Icon: Trophy, size: "size-12", color: "text-primary", delay: "0.5s", anim: "animate-float-3", left: "36%" },
-    { Icon: ListChecks, size: "size-9", color: "text-accent", delay: "2s", anim: "animate-float-1", left: "52%" },
-    { Icon: ImagePlus, size: "size-11", color: "text-primary", delay: "1s", anim: "animate-float-2", left: "66%" },
-    { Icon: Utensils, size: "size-7", color: "text-accent", delay: "3s", anim: "animate-float-3", left: "80%" },
-    { Icon: Trophy, size: "size-8", color: "text-primary", delay: "2.5s", anim: "animate-float-1", left: "92%" },
-  ];
+  const iconPool = [Utensils, Camera, Trophy, ListChecks, ImagePlus];
+  const icons = Array.from({ length: 48 }, (_, index) => {
+    const Icon = iconPool[index % iconPool.length];
+    return {
+      Icon,
+      left: `${(index * 19 + (index % 5) * 7) % 100}%`,
+      top: `${(index * 13 + (index % 7) * 11) % 120}%`,
+      size: 22 + ((index * 5) % 26),
+      delay: `-${(index * 1.7) % 28}s`,
+      duration: `${18 + ((index * 3) % 18)}s`,
+      drift: `${((index % 9) - 4) * 10}px`,
+      color: index % 2 === 0 ? "text-primary" : "text-accent",
+    };
+  });
+
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      {icons.map(({ Icon, size, color, delay, anim, left }, i) => (
+      {icons.map(({ Icon, size, color, delay, duration, drift, left, top }, i) => (
         <div
           key={i}
-          className={`absolute ${anim} opacity-20`}
-          style={{ bottom: "-10%", left, animationDelay: delay }}
+          className="absolute animate-force-icon-stream opacity-20"
+          style={
+            {
+              left,
+              top,
+              animationDelay: delay,
+              animationDuration: duration,
+              "--icon-drift": drift,
+            } as React.CSSProperties
+          }
         >
-          <Icon className={`${size} ${color}`} />
+          <Icon className={color} size={size} strokeWidth={1} />
         </div>
       ))}
     </div>
@@ -198,7 +237,7 @@ function SelectionForceScreen({
       <button
         onClick={() => setOpen(true)}
         className="size-52 rounded-full bg-primary text-primary-foreground shadow-2xl hover:shadow-primary/30 hover:scale-105 active:scale-95 transition-all duration-300 flex flex-col items-center justify-center gap-3"
-        style={{ animation: 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+        style={{ animation: "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite" }}
       >
         <ListChecks className="size-14" />
         <span className="font-semibold text-xl">Select Dishes</span>
@@ -244,9 +283,9 @@ function SelectionDialog({
   const fetchDishlist = useServerFn(getHouseholdDishlist);
   const saveFn = useServerFn(saveSelections);
   const qc = useQueryClient();
-  
+
   const { data, isLoading } = useQuery({ queryKey: ["dishlist"], queryFn: () => fetchDishlist() });
-  
+
   const [selected, setSelected] = useState<Set<string>>(new Set(initialSelections));
   const [busy, setBusy] = useState(false);
 
@@ -288,14 +327,19 @@ function SelectionDialog({
           <div className="flex items-start justify-between gap-2">
             <div>
               <DialogTitle>Select Dishes for {date}</DialogTitle>
-              <DialogDescription className="mt-1">Tap to select. Choose at least 5 ({selected.size} selected).</DialogDescription>
+              <DialogDescription className="mt-1">
+                Tap to select. Choose at least 5 ({selected.size} selected).
+              </DialogDescription>
             </div>
             {onAddDish && (
               <Button
                 variant="outline"
                 size="sm"
                 className="shrink-0 mt-0.5"
-                onClick={() => { onOpenChange(false); onAddDish(); }}
+                onClick={() => {
+                  onOpenChange(false);
+                  onAddDish();
+                }}
               >
                 <Plus className="size-4 mr-1.5" /> Add Dish
               </Button>
@@ -304,42 +348,64 @@ function SelectionDialog({
         </DialogHeader>
         <div className="flex-1 overflow-y-auto min-h-[40vh] py-4">
           {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="size-6 animate-spin" /></div>
+            <div className="flex justify-center py-8">
+              <Loader2 className="size-6 animate-spin" />
+            </div>
           ) : !data || data.items.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground space-y-3">
               <Utensils className="size-10 mx-auto opacity-30" />
               <p>No dishes yet in your household.</p>
               {onAddDish && (
-                <Button variant="secondary" onClick={() => { onOpenChange(false); onAddDish(); }}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onAddDish();
+                  }}
+                >
                   <Plus className="size-4 mr-1.5" /> Add the first dish
                 </Button>
               )}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {data.items.map(dish => {
+              {data.items.map((dish) => {
                 const isSel = selected.has(dish.dish_id);
                 return (
                   <div
                     key={dish.dish_id}
                     onClick={() => toggle(dish.dish_id)}
-                    className={`relative rounded-xl border p-2 cursor-pointer transition-all ${isSel ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border/50 hover:border-primary/30'}`}
+                    className={`relative rounded-xl border p-2 cursor-pointer transition-all ${isSel ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border/50 hover:border-primary/30"}`}
                   >
                     <div className="aspect-square bg-muted rounded-lg overflow-hidden mb-2">
-                      {dish.dish_image ? <img src={dish.dish_image} className="w-full h-full object-cover" /> : <Utensils className="size-8 m-auto opacity-20 h-full" />}
+                      {dish.dish_image ? (
+                        <img src={dish.dish_image} className="w-full h-full object-cover" />
+                      ) : (
+                        <Utensils className="size-8 m-auto opacity-20 h-full" />
+                      )}
                     </div>
-                    <p className="text-sm font-medium line-clamp-2 leading-tight">{dish.dish_name}</p>
+                    <p className="text-sm font-medium line-clamp-2 leading-tight">
+                      {dish.dish_name}
+                    </p>
                     <div className="absolute top-3 right-3 bg-background rounded-full shadow-sm">
-                      {isSel ? <CheckCircle2 className="size-5 text-primary" /> : <Circle className="size-5 text-muted-foreground/30" />}
+                      {isSel ? (
+                        <CheckCircle2 className="size-5 text-primary" />
+                      ) : (
+                        <Circle className="size-5 text-muted-foreground/30" />
+                      )}
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           )}
         </div>
         <DialogFooter className="mt-auto pt-4 border-t">
-          <Button onClick={submit} disabled={busy || selected.size < 5} className="w-full sm:w-auto">
+          <Button
+            onClick={submit}
+            disabled={busy || selected.size < 5}
+            className="w-full sm:w-auto"
+          >
             {busy ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
             Save Selections
           </Button>
@@ -351,13 +417,21 @@ function SelectionDialog({
 
 function SelectionsTab() {
   const tomorrowStr = useMemo(() => {
-    const d = new Date(); d.setDate(d.getDate() + 1); return getLocalDateString(d);
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return getLocalDateString(d);
   }, []);
   const todayStr = useMemo(() => getLocalDateString(new Date()), []);
-  
+
   const fetchSelections = useServerFn(getMySelections);
-  const { data: tomData } = useQuery({ queryKey: ["selections", tomorrowStr], queryFn: () => fetchSelections({ data: { date: tomorrowStr } }) });
-  const { data: todData } = useQuery({ queryKey: ["selections", todayStr], queryFn: () => fetchSelections({ data: { date: todayStr } }) });
+  const { data: tomData } = useQuery({
+    queryKey: ["selections", tomorrowStr],
+    queryFn: () => fetchSelections({ data: { date: tomorrowStr } }),
+  });
+  const { data: todData } = useQuery({
+    queryKey: ["selections", todayStr],
+    queryFn: () => fetchSelections({ data: { date: todayStr } }),
+  });
 
   const [open, setOpen] = useState(false);
   const [activeDate, setActiveDate] = useState(tomorrowStr);
@@ -380,40 +454,66 @@ function SelectionsTab() {
         <div className="p-4 rounded-2xl border bg-card shadow-sm flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-lg">Tomorrow</h3>
-            <p className="text-sm text-muted-foreground">{tomData?.selections.length || 0} dishes selected</p>
+            <p className="text-sm text-muted-foreground">
+              {tomData?.selections.length || 0} dishes selected
+            </p>
           </div>
-          <Button variant="secondary" onClick={() => openDialog(tomorrowStr, tomData?.selections.map(s => s.dish_id) ?? [])}>Edit</Button>
+          <Button
+            variant="secondary"
+            onClick={() => openDialog(tomorrowStr, tomData?.selections.map((s) => s.dish_id) ?? [])}
+          >
+            Edit
+          </Button>
         </div>
 
         <div className="p-4 rounded-2xl border bg-card shadow-sm flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-lg">Today</h3>
-            <p className="text-sm text-muted-foreground">{todData?.selections.length || 0} dishes selected</p>
+            <p className="text-sm text-muted-foreground">
+              {todData?.selections.length || 0} dishes selected
+            </p>
             <p className="text-xs text-muted-foreground mt-1">Locks at 7:00 AM</p>
           </div>
-          <Button variant="secondary" onClick={() => openDialog(todayStr, todData?.selections.map(s => s.dish_id) ?? [])}>Edit</Button>
+          <Button
+            variant="secondary"
+            onClick={() => openDialog(todayStr, todData?.selections.map((s) => s.dish_id) ?? [])}
+          >
+            Edit
+          </Button>
         </div>
       </div>
 
-      <SelectionDialog open={open} onOpenChange={setOpen} date={activeDate} initialSelections={initialSels} />
+      <SelectionDialog
+        open={open}
+        onOpenChange={setOpen}
+        date={activeDate}
+        initialSelections={initialSels}
+      />
     </div>
   );
 }
 
 function DishlistTab() {
   const fetchDishlist = useServerFn(getHouseholdDishlist);
-  const { data, isLoading, isError, error } = useQuery({ queryKey: ["dishlist"], queryFn: () => fetchDishlist() });
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["dishlist"],
+    queryFn: () => fetchDishlist(),
+  });
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
   return (
     <section>
       <div className="mb-6">
         <h2 className="font-display text-2xl font-semibold">Dishlist</h2>
-        <p className="text-sm text-muted-foreground opacity-80 mt-1">All dishes available in your household.</p>
+        <p className="text-sm text-muted-foreground opacity-80 mt-1">
+          All dishes available in your household.
+        </p>
       </div>
-      
+
       {isLoading ? (
-        <div className="flex justify-center pt-12"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
+        <div className="flex justify-center pt-12">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
       ) : isError ? (
         <div className="text-center py-12 text-destructive">
           <p>Error loading dishlist: {(error as Error).message}</p>
@@ -426,9 +526,17 @@ function DishlistTab() {
       ) : (
         <div className="grid grid-cols-2 gap-3">
           {data.items.map((item) => (
-            <div key={item.id} onClick={() => setDetailsId(item.dish_id)} className="group relative rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden hover:shadow-md hover:border-primary/20 transition-all duration-300 cursor-pointer">
+            <div
+              key={item.id}
+              onClick={() => setDetailsId(item.dish_id)}
+              className="group relative rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden hover:shadow-md hover:border-primary/20 transition-all duration-300 cursor-pointer"
+            >
               <div className="aspect-square bg-muted overflow-hidden flex items-center justify-center">
-                {item.dish_image ? <img src={item.dish_image} className="w-full h-full object-cover" /> : <Utensils className="size-10 text-muted-foreground/40" />}
+                {item.dish_image ? (
+                  <img src={item.dish_image} className="w-full h-full object-cover" />
+                ) : (
+                  <Utensils className="size-10 text-muted-foreground/40" />
+                )}
               </div>
               <div className="p-3">
                 <h3 className="font-semibold text-sm line-clamp-2">{item.dish_name}</h3>
@@ -437,7 +545,11 @@ function DishlistTab() {
           ))}
         </div>
       )}
-      <DishDetailsDialog dishId={detailsId} open={detailsId !== null} onOpenChange={(open) => !open && setDetailsId(null)} />
+      <DishDetailsDialog
+        dishId={detailsId}
+        open={detailsId !== null}
+        onOpenChange={(open) => !open && setDetailsId(null)}
+      />
     </section>
   );
 }
@@ -447,9 +559,16 @@ function LeaderboardTab({ isCook }: { isCook: boolean }) {
   const [date, setDate] = useState(todayStr);
 
   const fetchLb = useServerFn(getDailyLeaderboard);
-  const { data, isLoading, isError, error } = useQuery({ queryKey: ["leaderboard", date], queryFn: () => fetchLb({ data: { date } }) });
-  
-  const [scheduleFor, setScheduleFor] = useState<null | { dishId: string; dishName: string; dishImage: string | null }>(null);
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["leaderboard", date],
+    queryFn: () => fetchLb({ data: { date } }),
+  });
+
+  const [scheduleFor, setScheduleFor] = useState<null | {
+    dishId: string;
+    dishName: string;
+    dishImage: string | null;
+  }>(null);
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
   return (
@@ -457,14 +576,23 @@ function LeaderboardTab({ isCook }: { isCook: boolean }) {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="font-display text-2xl font-semibold">Leaderboard</h2>
-          <p className="text-sm text-muted-foreground opacity-80 mt-1">Aggregated selections for {date === todayStr ? 'Today' : date}.</p>
+          <p className="text-sm text-muted-foreground opacity-80 mt-1">
+            Aggregated selections for {date === todayStr ? "Today" : date}.
+          </p>
         </div>
-        <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-auto" />
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-auto"
+        />
       </div>
 
       <div className="mt-6">
         {isLoading ? (
-          <div className="flex justify-center pt-8"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>
+          <div className="flex justify-center pt-8">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          </div>
         ) : isError ? (
           <div className="text-center py-12 text-destructive">
             <p>Error loading leaderboard: {(error as Error).message}</p>
@@ -478,25 +606,50 @@ function LeaderboardTab({ isCook }: { isCook: boolean }) {
           <ol className="space-y-2">
             {data.leaderboard.map((dish, index) => (
               <li key={dish.dishId}>
-                <div onClick={() => setDetailsId(dish.dishId)} className={`group w-full flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 text-left cursor-pointer ${dish.isScheduled ? 'border-primary bg-primary/5' : 'border-border/50 bg-card/50 hover:bg-muted/50'}`}>
-                  <span className={`size-9 rounded-full flex items-center justify-center font-display font-semibold ${index === 0 ? "bg-primary text-primary-foreground" : index < 3 ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}>
+                <div
+                  onClick={() => setDetailsId(dish.dishId)}
+                  className={`group w-full flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 text-left cursor-pointer ${dish.isScheduled ? "border-primary bg-primary/5" : "border-border/50 bg-card/50 hover:bg-muted/50"}`}
+                >
+                  <span
+                    className={`size-9 rounded-full flex items-center justify-center font-display font-semibold ${index === 0 ? "bg-primary text-primary-foreground" : index < 3 ? "bg-accent text-accent-foreground" : "bg-secondary text-secondary-foreground"}`}
+                  >
                     {index + 1}
                   </span>
                   <div className="size-12 rounded-lg bg-muted overflow-hidden flex-shrink-0 flex items-center justify-center relative">
-                    {dish.dishImage ? <img src={dish.dishImage} className="w-full h-full object-cover" /> : <Utensils className="size-6 text-muted-foreground/40" />}
-                    {dish.isScheduled && <div className="absolute inset-0 bg-primary/20 flex items-center justify-center"><CheckCircle2 className="size-6 text-primary drop-shadow-md" /></div>}
+                    {dish.dishImage ? (
+                      <img src={dish.dishImage} className="w-full h-full object-cover" />
+                    ) : (
+                      <Utensils className="size-6 text-muted-foreground/40" />
+                    )}
+                    {dish.isScheduled && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                        <CheckCircle2 className="size-6 text-primary drop-shadow-md" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold line-clamp-1 flex items-center gap-2">
                       {dish.dishName}
-                      {dish.isScheduled && <span className="text-[10px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">Scheduled</span>}
+                      {dish.isScheduled && (
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">
+                          Scheduled
+                        </span>
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {dish.votes} {dish.votes === 1 ? "selection" : "selections"}
                     </p>
                   </div>
                   {isCook && !dish.isScheduled && (
-                    <Button size="sm" variant="secondary" className="ml-auto shrink-0" onClick={(e) => { e.stopPropagation(); setScheduleFor(dish); }}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="ml-auto shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setScheduleFor(dish);
+                      }}
+                    >
                       <CalendarPlus className="size-4 mr-1.5 hidden sm:inline" />
                       <span className="hidden sm:inline">Prepare</span>
                       <CalendarPlus className="size-4 sm:hidden" />
@@ -509,12 +662,24 @@ function LeaderboardTab({ isCook }: { isCook: boolean }) {
         )}
       </div>
       <ScheduleDialog dish={scheduleFor} date={date} onClose={() => setScheduleFor(null)} />
-      <DishDetailsDialog dishId={detailsId} open={detailsId !== null} onOpenChange={(open) => !open && setDetailsId(null)} />
+      <DishDetailsDialog
+        dishId={detailsId}
+        open={detailsId !== null}
+        onOpenChange={(open) => !open && setDetailsId(null)}
+      />
     </section>
   );
 }
 
-function ScheduleDialog({ dish, date, onClose }: { dish: null | { dishId: string; dishName: string; dishImage: string | null }, date: string, onClose: () => void }) {
+function ScheduleDialog({
+  dish,
+  date,
+  onClose,
+}: {
+  dish: null | { dishId: string; dishName: string; dishImage: string | null };
+  date: string;
+  onClose: () => void;
+}) {
   const scheduleFn = useServerFn(scheduleDish);
   const qc = useQueryClient();
   const [meal, setMeal] = useState<"breakfast" | "lunch" | "dinner">("dinner");
@@ -524,7 +689,15 @@ function ScheduleDialog({ dish, date, onClose }: { dish: null | { dishId: string
     if (!dish) return;
     setBusy(true);
     try {
-      await scheduleFn({ data: { dishId: dish.dishId, dishName: dish.dishName, dishImage: dish.dishImage, date, mealType: meal } });
+      await scheduleFn({
+        data: {
+          dishId: dish.dishId,
+          dishName: dish.dishName,
+          dishImage: dish.dishImage,
+          date,
+          mealType: meal,
+        },
+      });
       qc.invalidateQueries({ queryKey: ["leaderboard"] });
       toast.success("Scheduled!");
       onClose();
@@ -545,8 +718,13 @@ function ScheduleDialog({ dish, date, onClose }: { dish: null | { dishId: string
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Meal</Label>
-            <Select value={meal} onValueChange={(value) => setMeal(value as "breakfast" | "lunch" | "dinner")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={meal}
+              onValueChange={(value) => setMeal(value as "breakfast" | "lunch" | "dinner")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="breakfast">Breakfast</SelectItem>
                 <SelectItem value="lunch">Lunch</SelectItem>
@@ -556,7 +734,9 @@ function ScheduleDialog({ dish, date, onClose }: { dish: null | { dishId: string
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={submit} disabled={busy}>{busy ? "Saving..." : "Confirm"}</Button>
+          <Button onClick={submit} disabled={busy}>
+            {busy ? "Saving..." : "Confirm"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -569,7 +749,7 @@ function SettingsTab({ data }: { data: any }) {
   const regenFn = useServerFn(regenerateInviteCode);
   const [localCode, setLocalCode] = useState(data.household?.invite_code);
   const [regenBusy, setRegenBusy] = useState(false);
-  
+
   const isCreator = data.profile?.id === data.household?.created_by;
 
   async function signOut() {
@@ -592,30 +772,58 @@ function SettingsTab({ data }: { data: any }) {
             <div className="flex-1 h-12 flex items-center justify-center rounded-md border bg-muted/50 font-mono text-xl tracking-[0.3em] font-medium">
               {localCode}
             </div>
-            <Button size="icon" className="size-12" onClick={() => { navigator.clipboard.writeText(localCode); toast.success("Copied!"); }}>
+            <Button
+              size="icon"
+              className="size-12"
+              onClick={() => {
+                navigator.clipboard.writeText(localCode);
+                toast.success("Copied!");
+              }}
+            >
               <Copy className="size-5" />
             </Button>
           </div>
           {isCreator && (
-            <Button variant="outline" size="sm" disabled={regenBusy} onClick={async () => {
-              setRegenBusy(true);
-              try {
-                const res = await regenFn();
-                if (res?.household?.invite_code) { setLocalCode(res.household.invite_code); toast.success("New code generated"); }
-              } catch (e) { toast.error((e as Error).message); }
-              finally { setRegenBusy(false); }
-            }}>
-              <RefreshCw className={`size-4 mr-2 ${regenBusy ? 'animate-spin' : ''}`} /> Generate new code
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={regenBusy}
+              onClick={async () => {
+                setRegenBusy(true);
+                try {
+                  const res = await regenFn();
+                  if (res?.household?.invite_code) {
+                    setLocalCode(res.household.invite_code);
+                    toast.success("New code generated");
+                  }
+                } catch (e) {
+                  toast.error((e as Error).message);
+                } finally {
+                  setRegenBusy(false);
+                }
+              }}
+            >
+              <RefreshCw className={`size-4 mr-2 ${regenBusy ? "animate-spin" : ""}`} /> Generate
+              new code
             </Button>
           )}
         </div>
 
         <div className="p-4 rounded-2xl border border-destructive/20 bg-destructive/5 space-y-3">
           <h3 className="font-semibold text-destructive">Danger Zone</h3>
-          <Button variant="destructive" className="w-full justify-start" onClick={async () => {
-            try { await leaveFn(); toast.success("Left household"); router.navigate({ to: "/onboarding" }); }
-            catch (e) { toast.error((e as Error).message); }
-          }}>
+          <Button
+            variant="destructive"
+            className="w-full justify-start"
+            onClick={async () => {
+              try {
+                await leaveFn();
+                toast.success("Left household");
+                router.navigate({ to: "/onboarding" });
+              } catch (e) {
+                toast.error((e as Error).message);
+              }
+            }}
+          >
             <DoorOpen className="size-4 mr-2" /> Leave Household
           </Button>
           <Button variant="outline" className="w-full justify-start" onClick={signOut}>
@@ -627,33 +835,63 @@ function SettingsTab({ data }: { data: any }) {
   );
 }
 
-function BottomBar({ activeTab, onChange, onAddClick }: { activeTab: Tab, onChange: (t: Tab) => void, onAddClick: () => void }) {
+function BottomBar({
+  activeTab,
+  onChange,
+  onAddClick,
+}: {
+  activeTab: Tab;
+  onChange: (t: Tab) => void;
+  onAddClick: () => void;
+}) {
   const tabs = [
     { id: "selections", icon: ListChecks, label: "Selections" },
     { id: "dishlist", icon: Utensils, label: "Dishlist" },
-    { id: "leaderboard", icon: Trophy, label: "Leaderboard" },
-    { id: "settings", icon: Settings, label: "Settings" }
   ] as const;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 border-t bg-background/90 backdrop-blur-xl pb-safe z-50">
       <div className="max-w-md mx-auto flex items-center justify-around p-2">
-        {tabs.slice(0, 3).map(tab => (
-          <button key={tab.id} onClick={() => onChange(tab.id)} className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-            <tab.icon className={`size-6 ${activeTab === tab.id ? 'fill-primary/20' : ''}`} />
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
+              activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <tab.icon className={`size-6 ${activeTab === tab.id ? "fill-primary/20" : ""}`} />
             <span className="text-[10px] font-medium mt-1">{tab.label}</span>
           </button>
         ))}
-        
-        <button onClick={onAddClick} className="flex flex-col items-center justify-center p-2 -mt-4">
+
+        <button
+          onClick={() => onChange("leaderboard")}
+          className="flex flex-col items-center justify-center p-2 -mt-4"
+        >
           <div className="size-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
-            <Plus className="size-6" />
+            <Trophy className="size-6" />
           </div>
-          <span className="text-[10px] font-medium mt-1 text-primary">Add</span>
+          <span className="text-[10px] font-medium mt-1 text-primary">Leaderboard</span>
         </button>
 
-        <button onClick={() => onChange("settings")} className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${activeTab === "settings" ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-          <Settings className={`size-6 ${activeTab === "settings" ? 'fill-primary/20' : ''}`} />
+        <button
+          onClick={onAddClick}
+          className="flex flex-col items-center justify-center p-2 rounded-xl text-muted-foreground hover:text-foreground transition-all"
+        >
+          <Plus className="size-6" />
+          <span className="text-[10px] font-medium mt-1">Add</span>
+        </button>
+
+        <button
+          onClick={() => onChange("settings")}
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
+            activeTab === "settings"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Settings className={`size-6 ${activeTab === "settings" ? "fill-primary/20" : ""}`} />
           <span className="text-[10px] font-medium mt-1">Settings</span>
         </button>
       </div>
@@ -661,9 +899,24 @@ function BottomBar({ activeTab, onChange, onAddClick }: { activeTab: Tab, onChan
   );
 }
 
-const EMPTY_NUTRITION: Record<NutritionKey, string> = { protein: "", fat: "", carbohydrates: "", fiber: "", vitamins: "", minerals: "" };
+const EMPTY_NUTRITION: Record<NutritionKey, string> = {
+  protein: "",
+  fat: "",
+  carbohydrates: "",
+  fiber: "",
+  vitamins: "",
+  minerals: "",
+};
 
-function AddDishDialog({ open, onOpenChange, onSuccess }: { open: boolean; onOpenChange: (open: boolean) => void; onSuccess: () => void }) {
+function AddDishDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}) {
   const addDish = useServerFn(addDishToWishlist);
   const qc = useQueryClient();
   const [dishName, setDishName] = useState("");
@@ -674,16 +927,27 @@ function AddDishDialog({ open, onOpenChange, onSuccess }: { open: boolean; onOpe
   const [imageBusy, setImageBusy] = useState(false);
 
   useEffect(() => {
-    if (!open) { setDishName(""); setDishImage(null); setNutrition({ ...EMPTY_NUTRITION }); setRecipe(""); setBusy(false); setImageBusy(false); }
+    if (!open) {
+      setDishName("");
+      setDishImage(null);
+      setNutrition({ ...EMPTY_NUTRITION });
+      setRecipe("");
+      setBusy(false);
+      setImageBusy(false);
+    }
   }, [open]);
 
   async function onImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setImageBusy(true);
-    try { setDishImage(await resizeImage(file)); }
-    catch (error) { toast.error((error as Error).message); }
-    finally { setImageBusy(false); }
+    try {
+      setDishImage(await resizeImage(file));
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setImageBusy(false);
+    }
   }
 
   function buildNutrition() {
@@ -701,16 +965,29 @@ function AddDishDialog({ open, onOpenChange, onSuccess }: { open: boolean; onOpe
     e.preventDefault();
     const name = dishName.trim();
     if (!name) return;
-    if (!dishImage) { toast.error("Add a photo of the dish first."); return; }
+    if (!dishImage) {
+      toast.error("Add a photo of the dish first.");
+      return;
+    }
     setBusy(true);
     try {
-      await addDish({ data: { dishName: name, dishImage, nutrition: buildNutrition(), recipe: recipe.trim() || null } });
+      await addDish({
+        data: {
+          dishName: name,
+          dishImage,
+          nutrition: buildNutrition(),
+          recipe: recipe.trim() || null,
+        },
+      });
       qc.invalidateQueries({ queryKey: ["dishlist"] });
       toast.success(`Added ${name}`);
       onOpenChange(false);
       onSuccess();
-    } catch (error) { toast.error((error as Error).message); }
-    finally { setBusy(false); }
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -718,18 +995,33 @@ function AddDishDialog({ open, onOpenChange, onSuccess }: { open: boolean; onOpe
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add a dish</DialogTitle>
-          <DialogDescription>Take a photo, name the dish, and add nutrition or recipe details.</DialogDescription>
+          <DialogDescription>
+            Take a photo, name the dish, and add nutrition or recipe details.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label>Dish photo</Label>
             <div className="grid sm:grid-cols-[160px_1fr] gap-3">
               <div className="aspect-square rounded-xl bg-muted border overflow-hidden flex items-center justify-center relative">
-                {dishImage ? <img src={dishImage} alt="Preview" className="h-full w-full object-cover" /> : imageBusy ? <Loader2 className="size-6 animate-spin" /> : <ImagePlus className="size-8 text-muted-foreground/50" />}
+                {dishImage ? (
+                  <img src={dishImage} alt="Preview" className="h-full w-full object-cover" />
+                ) : imageBusy ? (
+                  <Loader2 className="size-6 animate-spin" />
+                ) : (
+                  <ImagePlus className="size-8 text-muted-foreground/50" />
+                )}
               </div>
               <div className="space-y-2 flex flex-col justify-center">
                 <div className="relative">
-                  <Input type="file" accept="image/*" capture="environment" onChange={onImageChange} disabled={busy || imageBusy} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={onImageChange}
+                    disabled={busy || imageBusy}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                  />
                   <Button type="button" variant="outline" className="w-full pointer-events-none">
                     <Camera className="size-4 mr-2" /> Choose dish picture
                   </Button>
@@ -740,25 +1032,53 @@ function AddDishDialog({ open, onOpenChange, onSuccess }: { open: boolean; onOpe
           </div>
           <div className="space-y-1.5">
             <Label>Dish name</Label>
-            <Input required maxLength={200} value={dishName} onChange={(e) => setDishName(e.target.value)} placeholder="e.g. paneer tikka" />
+            <Input
+              required
+              maxLength={200}
+              value={dishName}
+              onChange={(e) => setDishName(e.target.value)}
+              placeholder="e.g. paneer tikka"
+            />
           </div>
           <div className="space-y-3">
             <Label>Nutrition data (Optional)</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {NUTRITION_FIELDS.map((field) => (
                 <div key={field.key} className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">{field.label} ({field.unit})</Label>
-                  <Input type="number" min="0" step="0.1" inputMode="decimal" value={nutrition[field.key]} onChange={(e) => setNutrition((c) => ({ ...c, [field.key]: e.target.value }))} />
+                  <Label className="text-xs text-muted-foreground">
+                    {field.label} ({field.unit})
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    inputMode="decimal"
+                    value={nutrition[field.key]}
+                    onChange={(e) => setNutrition((c) => ({ ...c, [field.key]: e.target.value }))}
+                  />
                 </div>
               ))}
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>Recipe (Optional)</Label>
-            <Textarea value={recipe} maxLength={6000} onChange={(e) => setRecipe(e.target.value)} placeholder="Ingredients, instructions..." className="min-h-32" />
+            <Textarea
+              value={recipe}
+              maxLength={6000}
+              onChange={(e) => setRecipe(e.target.value)}
+              placeholder="Ingredients, instructions..."
+              className="min-h-32"
+            />
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={busy || imageBusy}>{busy ? <Loader2 className="size-4 animate-spin mr-2" /> : <Camera className="size-4 mr-2" />} Add dish</Button>
+            <Button type="submit" disabled={busy || imageBusy}>
+              {busy ? (
+                <Loader2 className="size-4 animate-spin mr-2" />
+              ) : (
+                <Camera className="size-4 mr-2" />
+              )}{" "}
+              Add dish
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -768,7 +1088,10 @@ function AddDishDialog({ open, onOpenChange, onSuccess }: { open: boolean; onOpe
 
 function resizeImage(file: File) {
   return new Promise<string>((resolve, reject) => {
-    if (!file.type.startsWith("image/")) { reject(new Error("Choose an image file.")); return; }
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("Choose an image file."));
+      return;
+    }
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Could not read the image."));
     reader.onload = () => {
@@ -781,7 +1104,10 @@ function resizeImage(file: File) {
         canvas.width = Math.max(1, Math.round(image.width * scale));
         canvas.height = Math.max(1, Math.round(image.height * scale));
         const ctx = canvas.getContext("2d");
-        if (!ctx) { reject(new Error("Could not prepare the image.")); return; }
+        if (!ctx) {
+          reject(new Error("Could not prepare the image."));
+          return;
+        }
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL("image/jpeg", 0.82));
       };
