@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Pencil,
   Camera,
   CalendarPlus,
   ImagePlus,
@@ -17,6 +18,9 @@ import {
   Copy,
   RefreshCw,
   UserPlus,
+  UserMinus,
+  Users,
+  Trash2,
   CheckCircle2,
   Circle,
   Download,
@@ -56,7 +60,13 @@ import {
   getDailyLeaderboard,
   getHouseholdDishlist,
 } from "@/lib/selections.functions";
-import { regenerateInviteCode, leaveHousehold } from "@/lib/household.functions";
+import {
+  regenerateInviteCode,
+  leaveHousehold,
+  getHouseholdMembers,
+  updateMemberRole,
+  removeMemberFromHousehold,
+} from "@/lib/household.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/app")({
@@ -290,6 +300,7 @@ function SelectionDialog({
 
   const [selected, setSelected] = useState<Set<string>>(new Set(initialSelections));
   const [busy, setBusy] = useState(false);
+  const [detailsId, setDetailsId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -389,12 +400,25 @@ function SelectionDialog({
                     <p className="text-sm font-medium line-clamp-2 leading-tight">
                       {dish.dish_name}
                     </p>
-                    <div className="absolute top-3 right-3 bg-background rounded-full shadow-sm">
-                      {isSel ? (
-                        <CheckCircle2 className="size-5 text-primary" />
-                      ) : (
-                        <Circle className="size-5 text-muted-foreground/30" />
-                      )}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded-full shadow-sm z-20">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDetailsId(dish.dish_id);
+                        }}
+                        className="p-1 hover:text-primary transition-colors text-muted-foreground hover:bg-muted/80 rounded-full"
+                        aria-label="Edit dish"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <div className="flex items-center justify-center">
+                        {isSel ? (
+                          <CheckCircle2 className="size-5 text-primary" />
+                        ) : (
+                          <Circle className="size-5 text-muted-foreground/30" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -413,6 +437,11 @@ function SelectionDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <DishDetailsDialog
+        dishId={detailsId}
+        open={detailsId !== null}
+        onOpenChange={(open) => !open && setDetailsId(null)}
+      />
     </Dialog>
   );
 }
@@ -749,10 +778,51 @@ function SettingsTab({ data }: { data: any }) {
   const router = useRouter();
   const leaveFn = useServerFn(leaveHousehold);
   const regenFn = useServerFn(regenerateInviteCode);
+  const fetchMembers = useServerFn(getHouseholdMembers);
+  const updateRoleFn = useServerFn(updateMemberRole);
+  const removeMemberFn = useServerFn(removeMemberFromHousehold);
+  const qc = useQueryClient();
+
   const [localCode, setLocalCode] = useState(data.household?.invite_code);
   const [regenBusy, setRegenBusy] = useState(false);
+  const [mutatingId, setMutatingId] = useState<string | null>(null);
 
   const isCreator = data.profile?.id === data.household?.created_by;
+
+  const { data: membersData, isLoading: loadingMembers } = useQuery({
+    queryKey: ["householdMembers"],
+    queryFn: () => fetchMembers(),
+  });
+
+  async function handleRoleChange(memberId: string, role: "cook" | "member" | "both") {
+    setMutatingId(memberId);
+    try {
+      await updateRoleFn({ data: { memberId, role } });
+      qc.invalidateQueries({ queryKey: ["householdMembers"] });
+      if (memberId === data.profile?.id) {
+        qc.invalidateQueries({ queryKey: ["selections"] });
+      }
+      toast.success("Role updated");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setMutatingId(null);
+    }
+  }
+
+  async function handleRemoveMember(memberId: string) {
+    if (!confirm("Are you sure you want to remove this family member from the household?")) return;
+    setMutatingId(memberId);
+    try {
+      await removeMemberFn({ data: { memberId } });
+      qc.invalidateQueries({ queryKey: ["householdMembers"] });
+      toast.success("Member removed");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setMutatingId(null);
+    }
+  }
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -810,6 +880,88 @@ function SettingsTab({ data }: { data: any }) {
               <RefreshCw className={`size-4 mr-2 ${regenBusy ? "animate-spin" : ""}`} /> Generate
               new code
             </Button>
+          )}
+        </div>
+
+        <div className="p-4 rounded-2xl border bg-card space-y-4">
+          <div>
+            <h3 className="font-semibold mb-1 flex items-center gap-2">
+              <Users className="size-4 text-muted-foreground" />
+              Family Members
+            </h3>
+            <p className="text-xs text-muted-foreground">Manage roles and membership in your household.</p>
+          </div>
+
+          {loadingMembers ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : !membersData?.members || membersData.members.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No other members in this household.</p>
+          ) : (
+            <div className="space-y-3">
+              {membersData.members.map((member) => {
+                const isSelf = member.id === data.profile?.id;
+                const initials = member.display_name ? member.display_name.slice(0, 2).toUpperCase() : "??";
+                
+                return (
+                  <div key={member.id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="size-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 select-none">
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                          {member.display_name}
+                          {isSelf && (
+                            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-semibold">
+                              You
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {member.role === "both" ? "Cook & Member" : member.role ?? "Member"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={member.role ?? "member"}
+                        disabled={mutatingId === member.id}
+                        onValueChange={(val) => handleRoleChange(member.id, val as "cook" | "member" | "both")}
+                      >
+                        <SelectTrigger className="w-[100px] h-8 text-xs bg-background/50 border-border/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="member">Member</SelectItem>
+                          <SelectItem value="cook">Cook</SelectItem>
+                          <SelectItem value="both">Both</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {!isSelf && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors shrink-0"
+                          disabled={mutatingId === member.id}
+                          onClick={() => handleRemoveMember(member.id)}
+                          aria-label={`Remove ${member.display_name}`}
+                        >
+                          {mutatingId === member.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <UserMinus className="size-3.5" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 

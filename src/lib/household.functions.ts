@@ -118,14 +118,93 @@ export const joinHousehold = createServerFn({ method: "POST" })
 export const getHouseholdMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const { data: profile, error: pErr } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!profile?.household_id) return { members: [] };
+
     const { data, error } = await supabase
       .from("profiles")
       .select("id, display_name, role")
-      .not("household_id", "is", null)
-      .order("created_at", { ascending: true });
+      .eq("household_id", profile.household_id)
+      .order("display_name", { ascending: true });
     if (error) throw new Error(error.message);
     return { members: data ?? [] };
+  });
+
+export const updateMemberRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        memberId: z.string().uuid(),
+        role: RoleEnum,
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: caller } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!caller?.household_id) throw new Error("You are not in a household");
+
+    const { data: target } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", data.memberId)
+      .maybeSingle();
+    if (!target || target.household_id !== caller.household_id) {
+      throw new Error("Member not found in your household");
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ role: data.role })
+      .eq("id", data.memberId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removeMemberFromHousehold = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ memberId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: caller } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!caller?.household_id) throw new Error("You are not in a household");
+
+    const { data: target } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", data.memberId)
+      .maybeSingle();
+    if (!target || target.household_id !== caller.household_id) {
+      throw new Error("Member not found in your household");
+    }
+
+    // Clear target's selections when they are removed
+    await supabase
+      .from("selections")
+      .delete()
+      .eq("user_id", data.memberId);
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ household_id: null, role: null })
+      .eq("id", data.memberId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const regenerateInviteCode = createServerFn({ method: "POST" })
@@ -174,6 +253,13 @@ export const leaveHousehold = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    
+    // Clear user's selections when they leave the household
+    await supabase
+      .from("selections")
+      .delete()
+      .eq("user_id", userId);
+
     const { error } = await supabase
       .from("profiles")
       .update({ household_id: null, role: null })
