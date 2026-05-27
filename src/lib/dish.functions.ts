@@ -142,21 +142,75 @@ export const addDishToWishlist = createServerFn({ method: "POST" })
       dish = updatedDish;
     }
 
-    const weekStart = currentWeekStart();
-    const { error: wishError } = await supabase.from("wishlist_items").insert({
-      household_id: profile.household_id,
-      user_id: userId,
-      dish_id: dish.id,
-      dish_name: dish.name,
-      dish_image: dish.image,
-      week_start: weekStart,
-    });
-    if (wishError) {
-      if (wishError.code === "23505") throw new Error("You've already added this dish this week.");
-      throw new Error(wishError.message);
-    }
-
     return { ok: true, dish };
+  });
+
+export const updateDish = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        name: z.string().trim().min(1).max(200).optional(),
+        image: z
+          .string()
+          .max(950_000)
+          .refine((v) => v.startsWith("data:image/") || v.startsWith("http"), {
+            message: "Must be an image",
+          })
+          .optional(),
+        nutrition: NutritionSchema.nullable().optional(),
+        recipe: z.string().trim().max(6000).nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    // verify dish belongs to user's household
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!profile?.household_id) throw new Error("No household");
+
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (data.name !== undefined) {
+      patch.name = data.name;
+      patch.normalized_name = normalizeDishName(data.name);
+    }
+    if (data.image !== undefined) patch.image = data.image;
+    if (data.nutrition !== undefined)
+      patch.nutrition = compactNutrition(data.nutrition) as Json;
+    if (data.recipe !== undefined) patch.recipe = data.recipe;
+
+    const { error } = await supabase
+      .from("household_dishes")
+      .update(patch)
+      .eq("id", data.id)
+      .eq("household_id", profile.household_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteDish = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("household_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!profile?.household_id) throw new Error("No household");
+    const { error } = await supabase
+      .from("household_dishes")
+      .delete()
+      .eq("id", data.id)
+      .eq("household_id", profile.household_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const getDishDetails = createServerFn({ method: "POST" })

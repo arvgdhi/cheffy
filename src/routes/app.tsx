@@ -1083,43 +1083,24 @@ function AddDishDialog({
                 )}
               </div>
               <div className="space-y-2 flex flex-col justify-center">
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="relative">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={onImageChange}
-                      disabled={busy || imageBusy}
-                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full pointer-events-none text-sm"
-                    >
-                      <Camera className="size-4 mr-1.5" /> Camera
-                    </Button>
-                  </label>
-                  <label className="relative">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={onImageChange}
-                      disabled={busy || imageBusy}
-                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full pointer-events-none text-sm"
-                    >
-                      <ImagePlus className="size-4 mr-1.5" /> Gallery
-                    </Button>
-                  </label>
-                </div>
+                <label className="relative">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={onImageChange}
+                    disabled={busy || imageBusy}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full pointer-events-none text-sm"
+                  >
+                    <ImagePlus className="size-4 mr-1.5" /> Choose Photo
+                  </Button>
+                </label>
                 <p className="text-xs text-muted-foreground leading-snug">
-                  Choose a source. Photos are resized automatically.
+                  Select an existing photo or take a new one. Photos are resized automatically.
                 </p>
                 {dishImage && (
                   <button
