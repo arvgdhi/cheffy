@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tanstack-start-app",
+  "name": "cheffy",
   "vars": {
     "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_UEmgWgRhEdSaaBcAAv-qvA_s9krlV65",
     "SUPABASE_URL": "https://giagosksljmnpyohzrdl.supabase.co",
